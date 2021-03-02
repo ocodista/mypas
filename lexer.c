@@ -12,43 +12,59 @@
 #include <lexer.h>
 
 int column = 1;
+char lexeme[MAXIDLEN + 1];
 int linenumber = 1;
+int lookahead;
 
 FILE *source;
 
-/**************************************
- * Ignores unused characters from tape
- **************************************/
-void skipunused(FILE *tape)
+/******************************************************
+ * This method is used to classify the entrance the 
+ * following categories:
+ * 
+ * ID -> in case follows the rule of ID
+ *	  -> [A-Za-z][A-Za-z0-9]*
+ *
+ * OCT -> in case number is in format of octal
+ * HEX -> in case number is in format of hex
+ * NUM -> in case of a number not HEX not OCT
+ * isASGN -> searchs for assignment (:=)
+ * isRELOP -> checks if its comparative(<, <=, >, >=)
+ *****************************************************/
+int gettoken(FILE *source)
 {
-	int head;
-_skipspaces:
-	while (isspace(head = getc(tape)))
-	{
-		if (head == '\n')
-			linenumber++;
-	}
+	int token;
 
-	// Ignoring comments that starts with '{' and ends with '}'
-	if ((head = getc(tape)) == '{')
-	{
-		// match('{');
-		while ((head = getc(tape)) != '}' || head != EOF)
-			if (head == '\n')
-				linenumber++;
-		;
-		if (head == '}')
-		{
-			// match('}');
-			goto _skipspaces;
-		}
-	}
-	ungetc(head, tape);
+	skipunused(source);
+
+	if ((token = isID(source)))
+		return token;
+
+	if ((token = isOCT(source)))
+		return token;
+
+	if ((token = isHEX(source)))
+		return token;
+
+	if ((token = isNUM(source)))
+		return token;
+
+	if ((token = isASGN(source)))
+		return token;
+
+	if ((token = isRELOP(source)))
+		return token;
+
+	token = getc(source);
+
+	return token;
 }
 
-/* Now we need a predicate function to recognize a string
- * begining with a letter (alpha) followed by zero or more
- * digits and letters.
+/**********************************************
+ * In this method, we need a predicate 
+ * function to recognize a string
+ * begining with a letter (alpha) followed 
+ * by zero or more digits and letters.
  *
  * REGEX: [A-Za-z][A-Za-z0-9]*
  *
@@ -56,10 +72,7 @@ _skipspaces:
  *            returns 0 otherwise
  * isalnum(x) returns 1 if x \in [A-Za-z0-9]
  *            returns 0 otherwise
- */
-int lookahead;
-char lexeme[MAXIDLEN + 1];
-
+ **********************************************/
 int isID(FILE *tape)
 {
 	int i = 0;
@@ -82,11 +95,12 @@ int isID(FILE *tape)
 	return 0;
 }
 
-/* Next, we have to implement a method to recognize decimal
- * pattern (unsigned int)
+/**********************************************
+ * Next, we have to implement a method 
+ * to recognize decimal pattern (unsigned int)
  * 
  * REGEX: [1-9][0-9]* | 0
- */
+ ***********************************************/
 int isUINT(FILE *tape)
 {
 	int i = 0;
@@ -114,13 +128,14 @@ int isUINT(FILE *tape)
 	return 0;
 }
 
-/**
+/******************************************************
+ * Validating if input is number
  *
  * REGEX:
  * ( uint '.' [0-9]*  |  '.' [0-9]+ ) ee?  |  uint ee
  * uint = [1-9][0-9]* | 0
  * ee = [eE] ['+''-']? [0-9]+
- */
+ ******************************************************/
 int isNUM(FILE *tape)
 {
 	int token = 0, i = 0;
@@ -221,9 +236,10 @@ int isNUM(FILE *tape)
 	return token;
 }
 
-/* Octal pattern is defined as
+/*******************************
+ * Octal pattern is defined as
  * REGEX: 0[0-7]+
- */
+ ********************************/
 int isOCT(FILE *tape)
 {
 	int i = 0;
@@ -299,6 +315,10 @@ int isHEX(FILE *tape)
 	return 0;
 }
 
+/*******************************
+ * Checks if sequence is assign
+ * ASGN -> :=
+ *******************************/
 int isASGN(FILE *tape)
 {
 	int i = 0;
@@ -360,44 +380,34 @@ int isRELOP(FILE *tape)
 	return lexeme[i] = 0;
 }
 
-/******************************************************
- * This method is used to classify the entrance the 
- * following categories:
+/**************************************
+ * Ignores unused characters from tape
  * 
- * ID -> in case follows the rule of ID
- *	  -> [A-Za-z][A-Za-z0-9]*
- *
- * OCT -> in case number is in format of octal
- * HEX -> in case number is in format of hex
- * NUM -> in case of a number not HEX not OCT
- * isASGN -> searchs for assignment (:=)
- * isRELOP -> checks if its comparative(<, <=, >, >=)
- *****************************************************/
-int gettoken(FILE *source)
+ * REGEX: [ {\s} | \n | EOF ]
+ **************************************/
+void skipunused(FILE *tape)
 {
-	int token;
+	int head;
+_skipspaces:
+	while (isspace(head = getc(tape)))
+	{
+		if (head == '\n')
+			linenumber++;
+	}
 
-	skipunused(source);
-
-	if ((token = isID(source)))
-		return token;
-
-	if ((token = isOCT(source)))
-		return token;
-
-	if ((token = isHEX(source)))
-		return token;
-
-	if ((token = isNUM(source)))
-		return token;
-
-	if ((token = isASGN(source)))
-		return token;
-
-	if ((token = isRELOP(source)))
-		return token;
-
-	token = getc(source);
-
-	return token;
+	// Ignoring comments that starts with '{' and ends with '}'
+	if ((head = getc(tape)) == '{')
+	{
+		// match('{');
+		while ((head = getc(tape)) != '}' || head != EOF)
+			if (head == '\n')
+				linenumber++;
+		;
+		if (head == '}')
+		{
+			// match('}');
+			goto _skipspaces;
+		}
+	}
+	ungetc(head, tape);
 }
