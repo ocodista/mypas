@@ -566,8 +566,8 @@ int fact(int fact_type)
 		match(FLOAT);
 		break;
 	default:
-		/**/ strcpy(name, lexeme); /**/
-
+		/**/ strcpy(name, lexeme);		  /**/
+		/**/ char *ot_label = malloc(10); /**/
 		match(ID);
 		if (lookahead == ASGN)
 		{
@@ -576,14 +576,15 @@ int fact(int fact_type)
 			expr_type = /***/ expr(fact_type); /**/
 			if (symtab_lookup(name) < 0)
 			{
-				fprintf(stderr, "%s undeclared\n", name);
+				fprintf(stderr, "Variable %s was not declared!\n", name);
 				semantic_error++;
 			}
 			else
 			{
 				if (symtab[symtab_entry].objtype != OT_VARIABLE)
 				{
-					fprintf(stderr, "%s cannot be an L-Value", name);
+					ot_label = get_object_type_label(symtab[symtab_entry].objtype);
+					fprintf(stderr, "%s %s cannot be used as variable (left-assign)!\n", ot_label, name);
 					semantic_error++;
 				}
 				else
@@ -603,7 +604,7 @@ int fact(int fact_type)
 			/**/
 			if (symtab_lookup(name) < 0)
 			{
-				fprintf(stderr, "%s undeclared\n", name);
+				fprintf(stderr, "Variable %s was not declared!\n", name);
 				semantic_error++;
 			}
 			else

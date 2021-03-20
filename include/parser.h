@@ -9,6 +9,7 @@
 #include <symtab.h>
 #include <enums.h>
 #include <pseudocode.h>
+#include <utils.h>
 
 void mypas(void);
 void declarative(void);

@@ -2,7 +2,7 @@
 CFLAGS=-g -I./include
 
 # This line names the program as mypas and points to every file used in the compilation process
-mypas: mypas.o lexer.o parser.o pseudocode.o keywords.o symtab.o
+mypas: mypas.o lexer.o parser.o pseudocode.o keywords.o symtab.o utils.o
 	$(CC) -o $@ $^
 
 # This command cleans the generated binary-files

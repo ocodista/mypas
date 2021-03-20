@@ -1,60 +1,6 @@
 #include <pseudocode.h>
 //TODO: FINISH COMMENTING THIS
 
-/************************************************
- * Function used to identify variable type id 
- * 
- * BOOL  -> b
- * INT32 -> l
- * INT64 -> q
- * FLT32 -> f
- * FLT64 -> df
- ************************************************/
-char *get_var_type_id(int var_type)
-{
-	char *label = malloc(3);
-
-	switch (var_type)
-	{
-	case BOOL:
-		strcpy(label, "b");
-		break;
-	case INT32:
-		strcpy(label, "l");
-		break;
-	case INT64:
-		strcpy(label, "q");
-		break;
-	case FLT32:
-		strcpy(label, "f");
-		break;
-	case FLT64:
-		strcpy(label, "df");
-		break;
-	default:;
-	}
-	return label;
-}
-
-/************************************************
- * Function used to return different variable
- * Depending on var type
- * 
- * BOOL  -> (varname)b
- * INT32 -> (varname)l
- * INT64 -> (varname)q
- * FLT32 -> (varname)f
- * FLT64 -> (varname)df
- ************************************************/
-char *get_var_label(int var_type, char *var_name)
-{
-	char *type_label = get_var_type_id(var_type);
-	char *result = malloc(strlen(var_name) + strlen(type_label) + 1);
-	strcpy(result, var_name);
-	strcat(result, type_label);
-	return result;
-}
-
 /**********************************************
  * Function to retrieve value from accumulator
  * And store into var "name"
