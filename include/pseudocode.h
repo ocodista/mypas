@@ -5,19 +5,43 @@
 #include <string.h>
 #include <enums.h>
 
+/****************************
+ * assign/retrive functions
+ ****************************/
 void L_value(int, const char *name);
 void R_value(int, const char *name);
-void add(int);
-void subtract(int);
-void multiply(int);
-void divide(int);
-void negate(int type);
-void push(int);
 void mov(int type, const char *dest, const char *src);
+/**********************************
+ * end of assign/retrive functions
+ **********************************/
+
+/**********************
+ * jump functions
+ **********************/
 void gofalse(int value);
 void golabel(int value);
-void mklabel(int value);
+/**********************
+ * end jump functions
+ **********************/
 
-char *get_var_type_id(int var_type);
-char *get_var_label(int var_type, char *var_name);
+/*****************
+ * math functions
+ *****************/
+void add(int);
+void divide(int);
+void multiply(int);
+void negate(int type);
+void subtract(int);
+/************************
+ * end of math functions
+ ************************/
+
+/************************
+ * variable functions
+ ************************/
 void cmp(int relop, int var_type, char *left_operator, char *right_operator);
+void mklabel(int value);
+void push(int);
+/************************
+ * end variable functions
+ ************************/

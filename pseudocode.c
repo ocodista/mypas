@@ -108,11 +108,11 @@ void golabel(int value)
 {
 	printf("\tgoto .L%d\n", value);
 }
+/**********************
+ * end jump functions
+ **********************/
 
 void mklabel(int value)
 {
 	printf(".L%d:\n", value);
 }
-/**********************
- * end jump functions
- **********************/
