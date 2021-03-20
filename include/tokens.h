@@ -1,4 +1,6 @@
 /**@<tokens.h>::**/
+#pragma once
+
 // #define ID 1024
 // #define UINT 1025
 

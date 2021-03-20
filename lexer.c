@@ -7,7 +7,7 @@
 
 int column = 1;
 char lexeme[MAXIDLEN + 1];
-int linenumber = 1;
+int line_number = 1;
 
 /***************************************
  * Ignores spaces and comments from tape
@@ -19,7 +19,7 @@ _skipspaces:
 	while (isspace(head = getc(tape)))
 	{
 		if (head == '\n')
-			linenumber++;
+			line_number++;
 	}
 
 	// Ignoring comments that starts with '{' and ends with '}'
@@ -28,7 +28,7 @@ _skipspaces:
 		while ((head = getc(tape)) != '}' && head != EOF)
 		{
 			if (head == '\n')
-				linenumber++;
+				line_number++;
 		}
 
 		if (head == '}')

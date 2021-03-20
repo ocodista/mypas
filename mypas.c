@@ -1,5 +1,5 @@
 /**@<mypas.c>::**/
-
+#include <mypas.h>
 /****************************************
  * Project MyPas - Group 6
  * 
@@ -17,9 +17,6 @@
  * 
  * It allows the input to be stdin or a physical file on disk
  **********************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <tokens.h>
 
 // This functions can be found at parser.c
 void mypas(void);
@@ -48,9 +45,9 @@ int main(int argc, char const *argv[])
 		// Checks if it was able to open file
 		if (source == NULL)
 		{
-			fprintf(stderr,
-					"argv[1]: cannot open... exiting with error status\n",
-					argv[1]);
+			char message[50];
+			snprintf(message, sizeof(message), "Cannot open file at %s", argv[1]);
+			show_error(message);
 			exit(-1);
 		}
 	}

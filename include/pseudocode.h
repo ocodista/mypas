@@ -28,13 +28,22 @@ void golabel(int value);
 /*****************
  * math functions
  *****************/
-void add(int);
-void divide(int);
-void multiply(int);
-void negate(int type);
-void subtract(int);
+void add(int var_type);
+void divide(int var_type);
+void multiply(int var_type);
+void negate(int var_type);
+void subtract(int var_type);
 /************************
  * end of math functions
+ ************************/
+
+/************************
+ * stack functions
+ ************************/
+void pop(int var_type, char *address);
+void push(int var_type, char *address);
+/************************
+ * end of stack functions
  ************************/
 
 /************************
@@ -42,7 +51,6 @@ void subtract(int);
  ************************/
 void cmp(int relop, int var_type, char *left_operator, char *right_operator);
 void mklabel(int value);
-void push(int);
 /************************
  * end variable functions
  ************************/

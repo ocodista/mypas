@@ -5,6 +5,9 @@
  * Variables declaration
  ***************************/
 
+// Buffer used to write messages
+char message[100];
+
 // Used to map lexical level of current execution
 /**/ int lexical_level = 0; /**/
 
@@ -250,20 +253,12 @@ void imperative(void)
 	match(BEGIN);
 stmt_list:
 	stmt();
-	if (semantic_error > 0)
+	if (lookahead == SEMICOLON)
 	{
-		semantic_error--;
+		match(SEMICOLON);
 		goto stmt_list;
 	}
-	else
-	{
-		if (lookahead == SEMICOLON)
-		{
-			match(SEMICOLON);
-			goto stmt_list;
-		}
-		match(END);
-	}
+	match(END);
 }
 
 /*****************************************************************************
@@ -446,12 +441,13 @@ int smpexpr(int smpexpr_type)
 	/**/ if (signal == '-' || signal == NOT)
 		negate(smpexpr_type);								/**/
 	/***/ smpexpr_type = iscompat(smpexpr_type, term_type); /***/
-
+	/**/ char *acc_label;									/**/
 	while (lookahead == '+' || lookahead == '-' || lookahead == OR)
 	{
 		/**/ int oplus = lookahead;							/**/
 		/***/ smpexpr_type = iscompat(smpexpr_type, oplus); /***/
-		/**/ push(smpexpr_type);							/**/
+		acc_label = get_var_label(smpexpr_type, "acc");
+		/**/ push(smpexpr_type, acc_label); /**/
 
 		match(lookahead); /***/
 		term_type = /***/ term(smpexpr_type);
@@ -486,6 +482,7 @@ int term(int term_type)
 {
 	/***/
 	int fact_type = /***/ fact(term_type);
+	char *acc_label;
 
 	/**/ term_type = iscompat(term_type, fact_type); /**/
 
@@ -493,7 +490,8 @@ int term(int term_type)
 	{
 		/**/ int otimes = lookahead;				   /**/
 		/***/ term_type = iscompat(term_type, otimes); /***/
-		/**/ push(term_type);						   /**/
+		/**/ acc_label = get_var_label(term_type, "acc");
+		/**/ push(term_type, acc_label); /**/
 
 		match(lookahead);
 
@@ -503,9 +501,9 @@ int term(int term_type)
 
 		// Here, we call get_var_label passing the term_type to
 		// Get the correct accumulator and aux, according to var type
-		/**/ char *acc = get_var_label(term_type, "acc"); /**/
+		/**/ acc_label = get_var_label(term_type, "acc"); /**/
 		/**/ char *aux = get_var_label(term_type, "aux"); /**/
-		/**/ mov(term_type, acc, aux);					  /**/
+		/**/ mov(term_type, acc_label, aux);			  /**/
 
 		/**/
 		switch (otimes)
@@ -575,7 +573,7 @@ int fact(int fact_type)
 			expr_type = /***/ expr(fact_type); /**/
 			if (symtab_lookup(name) < 0)
 			{
-				fprintf(stderr, "Variable %s was not declared!\n", name);
+				snprintf(message, sizeof(message), "Variable %s was not declared", name);
 				semantic_error++;
 			}
 			else
@@ -583,7 +581,7 @@ int fact(int fact_type)
 				if (symtab[symtab_entry].objtype != OT_VARIABLE)
 				{
 					ot_label = get_object_type_label(symtab[symtab_entry].objtype);
-					fprintf(stderr, "%s %s cannot be used as variable (left-assign)!\n", ot_label, name);
+					snprintf(message, sizeof(message), "%s %s cannot be used as variable (left-assign)", ot_label, name);
 					semantic_error++;
 				}
 				else
@@ -603,7 +601,7 @@ int fact(int fact_type)
 			/**/
 			if (symtab_lookup(name) < 0)
 			{
-				fprintf(stderr, "Variable %s was not declared!\n", name);
+				snprintf(message, sizeof(message), "Variable %s was not declared", name);
 				semantic_error++;
 			}
 			else
@@ -653,14 +651,20 @@ int fact(int fact_type)
 
 void match(int expected)
 {
+	if (semantic_error > 0)
+	{
+		show_error(message);
+		semantic_error--;
+		return;
+	}
+
 	if (lookahead == expected)
 	{
 		lookahead = gettoken(source);
 	}
 	else
 	{
-		fprintf(stderr, "token mismatch: expected %d whereas found %d\n",
-				expected, lookahead);
-		// exit(-2);
+		snprintf(message, sizeof(message), "Token mismatch: expected %d whereas found %d", expected, lookahead);
+		show_error(message);
 	}
 }

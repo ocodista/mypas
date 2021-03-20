@@ -76,3 +76,8 @@ char *get_object_type_label(int object_type)
     }
     return object_type_label;
 }
+
+void show_error(char *message)
+{
+    fprintf(stderr, "Error at line %d => %s!\n", line_number, message);
+}
