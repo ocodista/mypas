@@ -41,6 +41,7 @@ int symtab_append(const char *symbol, int lexical_level, int objtype, int transp
 		return -2;
 	}
 }
+
 void symtab_update_type(int start, int type)
 {
 	int i;

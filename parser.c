@@ -251,14 +251,25 @@ void imperative(void)
 	match(BEGIN);
 stmt_list:
 	stmt();
-	if (lookahead == SEMICOLON)
+	if (semantic_error > 0)
 	{
-		match(SEMICOLON);
+		semantic_error--;
 		goto stmt_list;
 	}
-	match(END);
+	else
+	{
+		if (lookahead == SEMICOLON)
+		{
+			match(SEMICOLON);
+			goto stmt_list;
+		}
+		match(END);
+	}
 }
 
+/*****************************************************************************
+ * rtrn -> RETURN expr
+ *****************************************************************************/
 void rtrn(void)
 {
 	match(RETURN);
@@ -572,7 +583,7 @@ int fact(int fact_type)
 			{
 				if (symtab[symtab_entry].objtype != OT_VARIABLE)
 				{
-					fprintf(stderr, "%s cannot be an L-Value", name, symtab[symtab_entry].objtype, expr_type);
+					fprintf(stderr, "%s cannot be an L-Value", name);
 					semantic_error++;
 				}
 				else
@@ -637,15 +648,14 @@ int fact(int fact_type)
 
 void match(int expected)
 {
-	if (semantic_error == 0)
-		if (lookahead == expected)
-		{
-			lookahead = gettoken(source);
-		}
-		else
-		{
-			fprintf(stderr, "token mismatch: expected %d whereas found %d\n",
-					expected, lookahead);
-			// exit(-2);
-		}
+	if (lookahead == expected)
+	{
+		lookahead = gettoken(source);
+	}
+	else
+	{
+		fprintf(stderr, "token mismatch: expected %d whereas found %d\n",
+				expected, lookahead);
+		// exit(-2);
+	}
 }

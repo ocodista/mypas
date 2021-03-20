@@ -3,12 +3,6 @@
  * This file has the purpose of classifying and validating
  * user entrances according to the lexicals rules of pascal
  ***********************************************************/
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
-#include <tokens.h>
-#include <constants.h>
-#include <keywords.h>
 #include <lexer.h>
 
 int column = 1;

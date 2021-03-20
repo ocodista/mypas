@@ -18,6 +18,6 @@ void gofalse(int value);
 void golabel(int value);
 void mklabel(int value);
 
-void cmp(int relop, int var_type, char *left_operator, char *right_operator);
-char *get_type_label(int var_type);
+char *get_var_type_id(int var_type);
 char *get_var_label(int var_type, char *var_name);
+void cmp(int relop, int var_type, char *left_operator, char *right_operator);
