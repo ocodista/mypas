@@ -11,7 +11,7 @@ int linenumber = 1;
 
 /***************************************
  * Ignores spaces and comments from tape
- **************************************/
+ ***************************************/
 void skipunused(FILE *tape)
 {
 	int head;
@@ -38,6 +38,7 @@ _skipspaces:
 	}
 	ungetc(head, tape);
 }
+
 /******************************************************
  * This method is used to classify the entrance the 
  * following categories:
@@ -50,8 +51,12 @@ _skipspaces:
  * NUM -> in case of a number not HEX not OCT
  * isASGN -> searchs for assignment (:=)
  * isRELOP -> checks if its comparative(<, <=, >, >=)
+ * isCOMMA -> checks if its ','
+ * isCOLON -> checks if its ':'
  * isSEMICOLON -> checks if its ';'
- * 
+ * isOPEN_PARENTHESES -> checks if its '('
+ * isCLOSED_PARENTHESES -> checks if its ')'
+ * isDOT -> checks if its '.'
  *****************************************************/
 int gettoken(FILE *source)
 {
@@ -355,10 +360,10 @@ int isHEX(FILE *tape)
 	return 0;
 }
 
-/*******************************
- * Checks if sequence is assign
+/***************************************
+ * Checks if the next sequence is assign
  * ASGN -> :=
- *******************************/
+ ***************************************/
 int isASGN(FILE *tape)
 {
 	int i = 0;

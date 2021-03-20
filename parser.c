@@ -1,6 +1,43 @@
 /**@<parser.c>::**/
 #include <parser.h>
 
+/***************************
+ * Variables declaration
+ ***************************/
+
+// Used to map lexical level of current execution
+/**/ int lexical_level = 0; /**/
+
+// Explanation for valid values for next variables can be found at enums.h
+/**/ int objtype;	  /**/
+/**/ int transp_type; /**/
+/*********************************
+ * End of declaration of variables 
+ *********************************/
+
+/*****************************************************************************
+ * mypas -> PROGRAM ID ; declarative imperative .
+ *****************************************************************************/
+void mypas(void)
+{
+	match(PROGRAM);
+	match(ID);
+	match(SEMICOLON);
+	/**/ lexical_level++; /**/
+	declarative();
+	imperative();
+	/**/ lexical_level--; /**/
+	match(DOT);
+}
+/*****************************************************************************
+ * declarative -> vardecl sbpdecl
+ *****************************************************************************/
+void declarative(void)
+{
+	vardecl();
+	sbpdecl();
+}
+
 /** iscompat table: **/
 /***************************************************************************************************
  *        bool   int32   int64   flt32   flt64     '+'     '-'     '*'     '/'    NOT    OR    AND
@@ -9,6 +46,8 @@
  * int64  ----   int64   int64   flt32   flt64    int64   int64   int64   int64  ----   ----   ----
  * flt32  ----   flt32   flt32   flt32   flt64    flt32   flt32   flt32   flt32  ----   ----   ----
  * flt64  ----   flt64   flt64   flt64   flt64    flt64   flt64   flt64   flt64  ----   ----   ----
+ * 
+ * This function is used to map the compatibility between two types of variable
  ***************************************************************************************************/
 int iscompat(int acc_type, int syn_type)
 {
@@ -50,46 +89,6 @@ int iscompat(int acc_type, int syn_type)
 	return INCOMPTBL;
 }
 
-/*****************************************************************************
- * mypas -> PROGRAM ID ; declarative imperative .
- *****************************************************************************/
-/**/ int lexical_level = 0; /**/
-							/*********************************
- * OBJ TYPE TABLE
- * 
- * 1 - Variable
- * 2 - Procedure
- * 3 - Function
- *********************************/
-/**/ int objtype;			/**/
-
-/*********************************
- * TRANSP TYPE TABLE
- * 
- * 1 - Local Storage
- * 2 - Passage by value
- * 3 - Passage by reference
- *********************************/
-/**/ int transp_type; /**/
-void mypas(void)
-{
-	match(PROGRAM);
-	match(ID);
-	match(SEMICOLON);
-	/**/ lexical_level++; /**/
-	declarative();
-	imperative();
-	/**/ lexical_level--; /**/
-	match(DOT);
-}
-/*****************************************************************************
- * declarative -> vardecl sbpdecl
- *****************************************************************************/
-void declarative(void)
-{
-	vardecl();
-	sbpdecl();
-}
 /*****************************************************************************
  * vardecl ->  [ VAR varlist : typemod ; { varlist : typemod ; } ]
  *****************************************************************************/
@@ -619,6 +618,11 @@ int fact(int fact_type)
 					/*** variable entry in symbol table is set in symtab_entry ***/
 					mov(fact_type, symtab[symtab_entry].offset, acc);
 					break;
+
+				case OT_PROCEDURE:
+					// TODO: Implement call of procedure
+					break;
+
 				case OT_FUNCTION:
 					if (lookahead == OPEN_PARENTHESES)
 					{

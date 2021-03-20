@@ -1,37 +1,66 @@
 /**@<mypas.c>::**/
 
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
+/**********************************************************************
+ * This file is used as the entry point of our application.
+ *
+ * The object of the project is to have a simplified compiler
+ * that generates intermediate code in the form of pseudocode assembly 
+ * 
+ * It allows the input to be stdin or a physical file on disk
+ **********************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <tokens.h>
 
+// This functions can be found at parser.c
 void mypas(void);
+
+// This function can be found at lexer.c
 int gettoken(FILE *);
 
+// This int will be used as a one-character buffer
 int lookahead;
+
+// The source is where the program will read .pas code
 FILE *source;
 
 int main(int argc, char const *argv[])
 {
-	source = fopen (argv[1], "r");
-
-	switch (argc) {
-		case 1:
-			source = stdin;
-			break;
-		default:
-			if (source == NULL) {
-				fprintf (stderr, 
-					"argv[1]: cannot open... exiting with error status\n", 
+	// Look at arg count to see where it shoul load the source
+	switch (argc)
+	{
+	case 1:
+		// Uses stdin in case file path isn't provided
+		source = stdin;
+		break;
+	default:
+		// Populates source with fopen in case file path is provided
+		source = fopen(argv[1], "r");
+		// Checks if it was able to open file
+		if (source == NULL)
+		{
+			fprintf(stderr,
+					"argv[1]: cannot open... exiting with error status\n",
 					argv[1]);
-				exit (-1);
-			}
+			exit(-1);
+		}
 	}
 
-	
+	// Read first character from source
 	lookahead = gettoken(source);
 
+	// Call mypas at parser.c
 	mypas();
 
+	// Exit program without error
 	exit(0);
-
 }

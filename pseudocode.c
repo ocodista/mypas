@@ -25,6 +25,9 @@ void L_value(int var_type, const char *name)
 	printf("\tmov%s acc%s, %s\n", type_label, type_label, name);
 }
 
+/************************************************
+ * Generate assembly pseudocode for function add
+ ************************************************/
 void add(int var_type)
 {
 	char *type_label = get_var_type_id(var_type);
