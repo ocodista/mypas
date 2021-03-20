@@ -8,6 +8,7 @@
 #include <keywords.h>
 #include <symtab.h>
 #include <pseudocode.h>
+#include <enums.h>
 
 void mypas(void);
 void declarative(void);

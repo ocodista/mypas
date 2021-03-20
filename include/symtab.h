@@ -4,7 +4,7 @@
 
 #include <string.h>
 #include <stdio.h>
-
+#include <enums.h>
 #include <constants.h>
 
 typedef struct __symtab__

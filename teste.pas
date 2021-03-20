@@ -5,29 +5,22 @@ program Teste;
 	    x, y: real;
 	    t, w: double;
 
-	procedure A(i: integer; var x: double);
-		
-		var abacaxi: integer;
-
-		{ Imperative scope }
-		begin
-			abacaxi := j;
-
-			{writeln abacaxi}
-
-		end;
-
 	function fact(n: integer): integer;
-		
-		{ Imperative scope }
+		{ Declarative scope }
+		var n: integer;
+
+		{ imperative scope }
 		begin
 			if n > 2 then
-				fact := n * fact(n - 1)
+				n := n * fact(n - 1)
 			else
-				fact := n
+				n := n;
+			return n {isso n existe em Pascal de verdade}
 		end;
 
-        { Imperative scope }
+    { end declarative scope }
+
+	{ imperative scope }
 	begin
 
 		t := w * fact (j)

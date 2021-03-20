@@ -10,18 +10,6 @@
  * flt32  ----   flt32   flt32   flt32   flt64    flt32   flt32   flt32   flt32  ----   ----   ----
  * flt64  ----   flt64   flt64   flt64   flt64    flt64   flt64   flt64   flt64  ----   ----   ----
  ***************************************************************************************************/
-/***
- * enum {
- *	INCOMPTBL = -1,
- *	VOID,
- *	BOOL,
- *	INT32,
- *	INT64,
- *	FLT32,
- *	FLT64,
- * };
- ***/
-
 int iscompat(int acc_type, int syn_type)
 {
 	switch (acc_type)
@@ -66,20 +54,33 @@ int iscompat(int acc_type, int syn_type)
  * mypas -> PROGRAM ID ; declarative imperative .
  *****************************************************************************/
 /**/ int lexical_level = 0; /**/
-							/*** objtype = 1 => variable; = 2 => procedure; = 3 => function ***/
+							/*********************************
+ * OBJ TYPE TABLE
+ * 
+ * 1 - Variable
+ * 2 - Procedure
+ * 3 - Function
+ *********************************/
 /**/ int objtype;			/**/
-							/*** transp_type = 1 => local storage; = 2 => passage by value; = 3 => passage by reference ***/
-/**/ int transp_type;		/**/
+
+/*********************************
+ * TRANSP TYPE TABLE
+ * 
+ * 1 - Local Storage
+ * 2 - Passage by value
+ * 3 - Passage by reference
+ *********************************/
+/**/ int transp_type; /**/
 void mypas(void)
 {
 	match(PROGRAM);
 	match(ID);
-	match(';');
+	match(SEMICOLON);
 	/**/ lexical_level++; /**/
 	declarative();
 	imperative();
 	/**/ lexical_level--; /**/
-	match('.');
+	match(DOT);
 }
 /*****************************************************************************
  * declarative -> vardecl sbpdecl
@@ -97,15 +98,15 @@ void vardecl(void)
 	if (lookahead == VAR)
 	{
 		match(VAR);
-		/**/ int first_pos;				/**/
-		/**/ objtype = transp_type = 1; /**/
+		/**/ int first_pos;							/**/
+		/**/ objtype = transp_type = LOCAL_STORAGE; /**/
 	_varlist_head:
 		/**/ first_pos = symtab_next_entry; /**/
 		varlist();
-		match(':');
+		match(COLON);
 		/**/ int type = /**/ typemod();
 		/**/ symtab_update_type(first_pos, type); /**/
-		match(';');
+		match(SEMICOLON);
 		if (lookahead == ID)
 		{
 			goto _varlist_head;
@@ -125,9 +126,9 @@ void varlist(void)
 _match_id_head:
 	/**/ symtab_append(lexeme, lexical_level, objtype, transp_type); /**/
 	match(ID);
-	if (lookahead == ',')
+	if (lookahead == COMMA)
 	{
-		match(',');
+		match(COMMA);
 		goto _match_id_head;
 	}
 }
@@ -169,7 +170,11 @@ _switch_head:
 	case FUNCTION:
 		isfunc = 1;
 	case PROCEDURE:
-		/**/ objtype = 2 + isfunc; /**/
+		if (isfunc)
+			objtype = OT_FUNCTION;
+		else
+			objtype = OT_PROCEDURE;
+
 		match(lookahead);
 		/**/ strcpy(sbpname, lexeme);												   /**/
 		/**/ int sbppos = symtab_append(sbpname, lexical_level, objtype, transp_type); /**/
@@ -179,8 +184,8 @@ _switch_head:
 		formparm();
 		if (isfunc)
 		{
-			isfunc = 0;
-			match(':');
+			/**/ isfunc = 0; /**/
+			match(COLON);
 			/**/ int rettype = /**/ typemod();
 			/**/ symtab[sbppos].type = rettype; /**/
 		}
@@ -188,12 +193,12 @@ _switch_head:
 		{
 			/**/ symtab[sbppos].type = VOID; /**/
 		}
-		match(';');
+		match(SEMICOLON);
 		declarative();
 		imperative();
 		/**/ lexical_level--;					  /**/
 		/**/ symtab_next_entry = symtab_sentinel; /**/
-		match(';');
+		match(SEMICOLON);
 		if (lookahead == FUNCTION || lookahead == PROCEDURE)
 		{
 			goto _switch_head;
@@ -206,32 +211,32 @@ _switch_head:
  *****************************************************************************/
 void formparm(void)
 {
-	if (lookahead == '(')
+	if (lookahead == OPEN_PARENTHESES)
 	{
-		match('(');
-		/**/ int first_pos; /**/
-		/**/ objtype = 1;	/**/
+		match(OPEN_PARENTHESES);
+		/**/ int first_pos;			/**/
+		/**/ objtype = OT_VARIABLE; /**/
 	parm_list:
 		/**/ first_pos = symtab_next_entry; /**/
 		if (lookahead == VAR)
 		{
 			match(VAR);
-			/**/ transp_type = 3; /**/
+			/**/ transp_type = PASS_BY_REF; /**/
 		}
 		else
 		{
-			/**/ transp_type = 2; /**/
+			/**/ transp_type = PASS_BY_VALUE; /**/
 		}
 		varlist();
-		match(':');
+		match(COLON);
 		/**/ int type = /**/ typemod();
 		/**/ symtab_update_type(first_pos, type); /**/
-		if (lookahead == ';')
+		if (lookahead == SEMICOLON)
 		{
-			match(';');
+			match(SEMICOLON);
 			goto parm_list;
 		}
-		match(')');
+		match(CLOSE_PARENTHESES);
 	}
 	else
 	{
@@ -246,21 +251,23 @@ void imperative(void)
 	match(BEGIN);
 stmt_list:
 	stmt();
-	if (lookahead == ';')
+	if (lookahead == SEMICOLON)
 	{
-		match(';');
+		match(SEMICOLON);
 		goto stmt_list;
 	}
 	match(END);
 }
-/*****************************************************************************
- * stmt -> imperative | ifstmt | whlstmt | rptstmt | fact | <empty>
- *****************************************************************************/
+
 void rtrn(void)
 {
 	match(RETURN);
 	expr(VOID);
 }
+
+/*****************************************************************************
+ * stmt -> imperative | ifstmt | whlstmt | rptstmt | fact | <empty>
+ *****************************************************************************/
 void stmt(void)
 {
 	/**/ int fact_type; /**/
@@ -281,7 +288,7 @@ void stmt(void)
 	case RETURN:
 		rtrn();
 		break;
-	case '(':
+	case OPEN_PARENTHESES:
 	case ID:
 	case BOOL:
 	case UINT:
@@ -291,6 +298,7 @@ void stmt(void)
 	default:;
 	}
 }
+
 /*****************************************************************************
  * ifstmt -> IF expr THEN stmt [ ELSE stmt ]
  *****************************************************************************/
@@ -314,6 +322,7 @@ void ifstmt(void)
 	}
 	/**/ mklabel(endif_count); /**/
 }
+
 /*****************************************************************************
  * whlstmt -> WHILE expr DO stmt
  *****************************************************************************/
@@ -329,6 +338,7 @@ void whlstmt(void)
 	/**/ golabel(whlhead); /**/
 	/**/ mklabel(whltail); /**/
 }
+
 /*****************************************************************************
  * rptstmt -> REPEAT stmt { ; stmt } UNTIL expr
  *****************************************************************************/
@@ -339,16 +349,19 @@ void rptstmt(void)
 	mklabel(replbl = loop_count++); /**/
 stmt_head:
 	stmt();
-	if (lookahead == ';')
+	if (lookahead == SEMICOLON)
 	{
-		match(';');
+		match(SEMICOLON);
 		goto stmt_head;
 	}
 	match(UNTIL);
 	/**/ expr_type = /**/ expr(BOOL);
-	gofalse(replbl);
+	/**/ gofalse(replbl); /**/
 }
-/* expr -> smpexpr [ relop smpexpr ] */
+
+/**************************************
+ * isrelop -> = | > | < | >= | <> | <=
+ **************************************/
 int isrelop(void)
 {
 	switch (lookahead)
@@ -363,6 +376,10 @@ int isrelop(void)
 	}
 	return 0;
 }
+
+/**************************************
+ * expr -> smpexprt [ relop smpexpr ]
+ **************************************/
 int expr(int expr_type)
 {
 	/**/ int relop;
@@ -371,7 +388,13 @@ int expr(int expr_type)
 
 	if (isrelop())
 	{
-		/**/ relop = lookahead; /**/
+		/**/ relop = lookahead;							  /**/
+														  // Here, we call get_var_label passing the smpexpr_type to
+														  // Get the correct accumulator and aux, according to var type
+		/**/ char *acc = get_var_label(left_type, "acc"); /**/
+		/**/ char *aux = get_var_label(left_type, "aux"); /**/
+		/**/ mov(left_type, acc, aux);					  /**/
+
 		/**/ if (expr_type != BOOL)
 			expr_type = INCOMPTBL; /**/
 
@@ -379,8 +402,13 @@ int expr(int expr_type)
 
 		/**/ right_type = /**/ smpexpr(left_type);
 		/**/ left_type = iscompat(left_type, right_type); /**/
-		/**/ if (left_type > 0)
-			return expr_type; /**/
+		/**/
+		if (left_type > 0)
+		{
+			cmp(relop, left_type, "aux", "acc");
+			return expr_type;
+		}
+		/**/
 	}
 	else
 	{
@@ -388,7 +416,10 @@ int expr(int expr_type)
 	}
 	/**/ return expr_type; /**/
 }
-/* smpexpr -> ['+''-'] term { (+) term } */
+
+/****************************************
+ * smpexpr -> ['+''-'] term { (+) term } 
+ ****************************************/
 int smpexpr(int smpexpr_type)
 {
 	/**/ int signal = 0; /**/
@@ -416,7 +447,12 @@ int smpexpr(int smpexpr_type)
 		term_type = /***/ term(smpexpr_type);
 
 		/***/ smpexpr_type = iscompat(smpexpr_type, term_type); /***/
-		/**/ mov(smpexpr_type, "acc", "aux");					/**/
+
+		// Here, we call get_var_label passing the smpexpr_type to
+		// Get the correct accumulator and aux, according to var type
+		/**/ char *acc = get_var_label(smpexpr_type, "acc"); /**/
+		/**/ char *aux = get_var_label(smpexpr_type, "aux"); /**/
+		/**/ mov(smpexpr_type, acc, aux);					 /**/
 
 		/**/
 		switch (oplus)
@@ -433,11 +469,15 @@ int smpexpr(int smpexpr_type)
 	/***/ return smpexpr_type; /***/
 }
 
-/* term -> fact { (*) fact } */
+/**************************************
+ * term -> fact { (*) fact } 
+ **************************************/
 int term(int term_type)
 {
-	/***/ int fact_type = /***/ fact(term_type); /**/
-	term_type = iscompat(term_type, fact_type);	 /**/
+	/***/
+	int fact_type = /***/ fact(term_type);
+
+	/**/ term_type = iscompat(term_type, fact_type); /**/
 
 	while (lookahead == '*' || lookahead == '/' || lookahead == DIV | lookahead == MOD | lookahead == AND)
 	{
@@ -451,7 +491,11 @@ int term(int term_type)
 
 		/***/ term_type = iscompat(term_type, fact_type); /***/
 
-		/**/ mov(term_type, "acc", "aux"); /**/
+		// Here, we call get_var_label passing the term_type to
+		// Get the correct accumulator and aux, according to var type
+		/**/ char *acc = get_var_label(term_type, "acc"); /**/
+		/**/ char *aux = get_var_label(term_type, "aux"); /**/
+		/**/ mov(term_type, acc, aux);					  /**/
 
 		/**/
 		switch (otimes)
@@ -468,40 +512,45 @@ int term(int term_type)
 	/***/ return term_type; /***/
 }
 
-/*  fact ->  ( expr )
+/**************************************
+ *  fact ->  ( expr )
  *       | n
  *       | v [ = expr ]
- */
-int getnumtype(const char *);
-
+ ***************************************/
 int fact(int fact_type)
 {
 	/**/ char name[MAXIDLEN + 1]; /**/
 	/***/ int expr_type;		  /***/
-
+	/**/ char *acc = malloc(6);	  /**/
 	switch (lookahead)
 	{
-	case '(':
-		match('('); /***/
+	case OPEN_PARENTHESES:
+		match(OPEN_PARENTHESES); /***/
 		expr_type = /***/ expr(fact_type);
-		match(')');
+		match(CLOSE_PARENTHESES);
 		/***/ fact_type = iscompat(fact_type, expr_type); /***/
 		break;
 	case BOOL:
 		/***/ fact_type = iscompat(fact_type, BOOL); /***/
-		/**/ mov(fact_type, lexeme, "acc");			 /**/
+													 // Get the correct accumulator according to var type
+		/**/ acc = get_var_label(fact_type, "acc");	 /**/
+		/**/ mov(fact_type, lexeme, acc);			 /**/
 
 		match(BOOL);
 		break;
 	case UINT:
 		/***/ fact_type = iscompat(fact_type, INT32); /***/
-		/**/ mov(fact_type, lexeme, "acc");			  /**/
+													  // Get the correct accumulator according to var type
+		/**/ acc = get_var_label(fact_type, "acc");	  /**/
+		/**/ mov(fact_type, lexeme, acc);			  /**/
 
 		match(UINT);
 		break;
 	case FLOAT:
 		/***/ fact_type = iscompat(fact_type, FLT32); /***/
-		/**/ mov(fact_type, lexeme, "acc");			  /**/
+													  // Get the correct accumulator according to var type
+		/**/ acc = get_var_label(fact_type, "acc");	  /**/
+		/**/ mov(fact_type, lexeme, acc);			  /**/
 
 		match(FLOAT);
 		break;
@@ -512,9 +561,8 @@ int fact(int fact_type)
 		if (lookahead == ASGN)
 		{
 			/**** L-Value ****/
-			match(ASGN); /***/
-			expr_type = /***/ expr(fact_type);
-			/**/
+			match(ASGN);					   /***/
+			expr_type = /***/ expr(fact_type); /**/
 			if (symtab_lookup(name) < 0)
 			{
 				fprintf(stderr, "%s undeclared\n", name);
@@ -522,16 +570,18 @@ int fact(int fact_type)
 			}
 			else
 			{
-				if (symtab[symtab_entry].objtype != 1)
+				if (symtab[symtab_entry].objtype != OT_VARIABLE)
 				{
-					fprintf(stderr, "%s cannot be an L-Value\n", name);
+					fprintf(stderr, "%s cannot be an L-Value", name, symtab[symtab_entry].objtype, expr_type);
 					semantic_error++;
 				}
 				else
 				{
 					fact_type = iscompat(expr_type, symtab[symtab_entry].type);
+					// Get the correct accumulator according to var type
+					/**/ acc = get_var_label(fact_type, "acc"); /**/
 					/*** variable entry in symbol table is set in symtab_entry ***/
-					mov(fact_type, "acc", symtab[symtab_entry].offset);
+					mov(fact_type, acc, symtab[symtab_entry].offset);
 				}
 			}
 			/**/
@@ -549,27 +599,33 @@ int fact(int fact_type)
 			{
 				switch (symtab[symtab_entry].objtype)
 				{
-				case 1:
+				case OT_VARIABLE:
 					fact_type = iscompat(fact_type, symtab[symtab_entry].type);
+					// Get the correct accumulator according to var type
+					/**/ acc = get_var_label(fact_type, "acc"); /**/
+
 					/*** variable entry in symbol table is set in symtab_entry ***/
-					mov(fact_type, symtab[symtab_entry].offset, "acc");
+					mov(fact_type, symtab[symtab_entry].offset, acc);
 					break;
-				case 3:
-					if (lookahead == '(')
+				case OT_FUNCTION:
+					if (lookahead == OPEN_PARENTHESES)
 					{
-						match('(');
+						match(OPEN_PARENTHESES);
 					_expr_list:
 						expr(VOID);
-						if (lookahead == ',')
+						if (lookahead == COMMA)
 						{
-							match(',');
+							match(COMMA);
 							goto _expr_list;
 						}
-						match(')');
+						match(CLOSE_PARENTHESES);
 					}
 					fact_type = iscompat(fact_type, symtab[symtab_entry].type);
+					// Get the correct accumulator according to var type
+					/**/ acc = get_var_label(fact_type, "acc"); /**/
+
 					/*** variable entry in symbol table is set in symtab_entry ***/
-					mov(fact_type, symtab[symtab_entry].offset, "acc");
+					mov(fact_type, symtab[symtab_entry].offset, acc);
 					break;
 				}
 			}
@@ -581,14 +637,15 @@ int fact(int fact_type)
 
 void match(int expected)
 {
-	if (lookahead == expected)
-	{
-		lookahead = gettoken(source);
-	}
-	else
-	{
-		fprintf(stderr, "token mismatch: expected %d whereas found %d\n",
-				expected, lookahead);
-		exit(-2);
-	}
+	if (semantic_error == 0)
+		if (lookahead == expected)
+		{
+			lookahead = gettoken(source);
+		}
+		else
+		{
+			fprintf(stderr, "token mismatch: expected %d whereas found %d\n",
+					expected, lookahead);
+			// exit(-2);
+		}
 }

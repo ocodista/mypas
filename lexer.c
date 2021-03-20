@@ -56,6 +56,8 @@ _skipspaces:
  * NUM -> in case of a number not HEX not OCT
  * isASGN -> searchs for assignment (:=)
  * isRELOP -> checks if its comparative(<, <=, >, >=)
+ * isSEMICOLON -> checks if its ';'
+ * 
  *****************************************************/
 int gettoken(FILE *source)
 {
@@ -79,6 +81,24 @@ int gettoken(FILE *source)
 		return token;
 
 	if ((token = isRELOP(source)))
+		return token;
+
+	if ((token = isCOMMA(source)))
+		return token;
+
+	if ((token = isCOLON(source)))
+		return token;
+
+	if ((token = isSEMICOLON(source)))
+		return token;
+
+	if ((token = isOPEN_PARENTHESES(source)))
+		return token;
+
+	if ((token = isCLOSE_PARENTHESES(source)))
+		return token;
+
+	if ((token = isDOT(source)))
 		return token;
 
 	token = getc(source);
@@ -404,4 +424,88 @@ int isRELOP(FILE *tape)
 	}
 	ungetc(lexeme[i], tape);
 	return lexeme[i] = 0;
+}
+
+/**********************************************
+ * In this method, we check if the next char
+ * of the tape is ','
+ **********************************************/
+int isCOMMA(FILE *tape)
+{
+	int head;
+	if ((head = getc(tape)) == ',')
+		return COMMA;
+
+	ungetc(head, tape);
+	return 0;
+}
+
+/**********************************************
+ * In this method, we check if the next char
+ * of the tape is ':'
+ **********************************************/
+int isCOLON(FILE *tape)
+{
+	int head;
+	if ((head = getc(tape)) == ':')
+		return COLON;
+
+	ungetc(head, tape);
+	return 0;
+}
+
+/**********************************************
+ * In this method, we check if the next char
+ * of the tape is ';'
+ **********************************************/
+int isSEMICOLON(FILE *tape)
+{
+	int head;
+	if ((head = getc(tape)) == ';')
+		return SEMICOLON;
+
+	ungetc(head, tape);
+	return 0;
+}
+
+/**********************************************
+ * In this method, we check if the next char
+ * of the tape is '('
+ **********************************************/
+int isOPEN_PARENTHESES(FILE *tape)
+{
+	int head;
+	if ((head = getc(tape)) == '(')
+		return OPEN_PARENTHESES;
+
+	ungetc(head, tape);
+	return 0;
+}
+
+/**********************************************
+ * In this method, we check if the next char
+ * of the tape is ')'
+ **********************************************/
+int isCLOSE_PARENTHESES(FILE *tape)
+{
+	int head;
+	if ((head = getc(tape)) == ')')
+		return CLOSE_PARENTHESES;
+
+	ungetc(head, tape);
+	return 0;
+}
+
+/**********************************************
+ * In this method, we check if the next char
+ * of the tape is '.'
+ **********************************************/
+int isDOT(FILE *tape)
+{
+	int head;
+	if ((head = getc(tape)) == '.')
+		return DOT;
+
+	ungetc(head, tape);
+	return 0;
 }
