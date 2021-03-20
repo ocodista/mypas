@@ -14,10 +14,36 @@
 int column = 1;
 char lexeme[MAXIDLEN + 1];
 int linenumber = 1;
-int lookahead;
 
-FILE *source;
+/***************************************
+ * Ignores spaces and comments from tape
+ **************************************/
+void skipunused(FILE *tape)
+{
+	int head;
+_skipspaces:
+	while (isspace(head = getc(tape)))
+	{
+		if (head == '\n')
+			linenumber++;
+	}
 
+	// Ignoring comments that starts with '{' and ends with '}'
+	if (head == '{')
+	{
+		while ((head = getc(tape)) != '}' && head != EOF)
+		{
+			if (head == '\n')
+				linenumber++;
+		}
+
+		if (head == '}')
+		{
+			goto _skipspaces;
+		}
+	}
+	ungetc(head, tape);
+}
 /******************************************************
  * This method is used to classify the entrance the 
  * following categories:
@@ -129,8 +155,8 @@ int isUINT(FILE *tape)
 }
 
 /******************************************************
- * Validating if input is number
- *
+ * This method validates if input is number using
+ * the following rule
  * REGEX:
  * ( uint '.' [0-9]*  |  '.' [0-9]+ ) ee?  |  uint ee
  * uint = [1-9][0-9]* | 0
@@ -378,36 +404,4 @@ int isRELOP(FILE *tape)
 	}
 	ungetc(lexeme[i], tape);
 	return lexeme[i] = 0;
-}
-
-/**************************************
- * Ignores unused characters from tape
- * 
- * REGEX: [ {\s} | \n | EOF ]
- **************************************/
-void skipunused(FILE *tape)
-{
-	int head;
-_skipspaces:
-	while (isspace(head = getc(tape)))
-	{
-		if (head == '\n')
-			linenumber++;
-	}
-
-	// Ignoring comments that starts with '{' and ends with '}'
-	if ((head = getc(tape)) == '{')
-	{
-		// match('{');
-		while ((head = getc(tape)) != '}' || head != EOF)
-			if (head == '\n')
-				linenumber++;
-		;
-		if (head == '}')
-		{
-			// match('}');
-			goto _skipspaces;
-		}
-	}
-	ungetc(head, tape);
 }

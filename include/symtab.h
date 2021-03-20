@@ -1,19 +1,30 @@
 /**@<symtab.h>::**/
+
 #pragma once
+
+#include <string.h>
+#include <stdio.h>
 
 #include <constants.h>
 
 typedef struct __symtab__
 {
-	char name[MAXIDLEN + 1];
+	char symbol[MAXIDLEN + 1];
+	char offset[MAXIDLEN + 1];
 	int type;
-	char offset[OFFSETSIZE + 1];
+	int data_size;
+	/** inserted on feb 17th: **/
+	int lexical_level;
+	int objtype;
+	int transp_type;
 } SYMTAB;
 
-extern SYMTAB symtab[];
-
-extern int symtab_nextentry;
-
+// int symtab_rtrvtype(const char *symbol, int lexical_level);
 int symtab_lookup(const char *);
+int symtab_append(const char *symbol, int lexical_level, int objtype, int transp_type);
+void symtab_update_type(int, int);
 
-int symtab_append(const char *);
+extern SYMTAB symtab[MAXSTBENTRIES];
+extern int symtab_next_entry;
+extern int semantic_error;
+extern int symtab_entry;

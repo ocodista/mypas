@@ -1,83 +1,118 @@
-#include <stdio.h>
+#include <pseudocode.h>
+//TODO: FINISH COMMENTING THIS
 
-void R_value(int var_type, const char *name) {
-	switch(var_type) {
-	case 2:/** int32 **/
-		printf("\tmovl %s, accl\n", name);
+/************************************************
+ * Function used to identify variable type label 
+ * 
+ * INT32 -> l
+ * INT64 -> q
+ * FLT32 -> f
+ * FLT64 -> df
+ ************************************************/
+char *get_type_label(int var_type)
+{
+	char *label = malloc(3);
+
+	switch (var_type)
+	{
+	case INT32:
+		strcpy(label, "l");
 		break;
-	case 3:/** int64 **/
-		printf("\tmovq %s, accq\n", name);
+	case INT64:
+		strcpy(label, "q");
 		break;
-	case 4:/** flt32 **/
-		printf("\tmovf %s, accf\n", name);
+	case FLT32:
+		strcpy(label, "f");
 		break;
-	case 5:/** flt64 **/
-		printf("\tmovdf %s, accdf\n", name);
+	case FLT64:
+		strcpy(label, "df");
 		break;
-	default:
-		;
+	default:;
 	}
+	return label;
 }
-void L_value(int var_type, const char *name) {
-	switch(var_type) {
-	case 2:/** int32 **/
-		printf("\tmovl accl, %s\n", name);
-		break;
-	case 3:/** int64 **/
-		printf("\tmovq accq, %s\n", name);
-		break;
-	case 4:/** flt32 **/
-		printf("\tmovf accf, %s\n", name);
-		break;
-	case 5:/** flt64 **/
-		printf("\tmovdf acdf, %s\n", name);
-		break;
-	default:
-		;
-	}
+
+/**********************************************
+ * Function to retrieve value from accumulator
+ * And store into var "name"
+ * 
+ * NOTE: Each type has its own accumulator
+ **********************************************/
+void R_value(int var_type, const char *name)
+{
+	char *type_label = get_type_label(var_type);
+	printf("\tmov%s %s, acc%s\n", type_label, name, type_label);
 }
-void add(int type) {
-	switch(type) {
-	case 2:/** int32 **/
-		printf("\tpopl regl\n");
-		printf("\taddl regl, accl\n");
-		break;
-	case 3:/** int64 **/
-		printf("\tpopq regq\n");
-		printf("\taddq regq, accq\n");
-		break;
-	case 4:/** flt32 **/
-		printf("\tpopf regf\n");
-		printf("\taddf regf, accf\n");
-		break;
-	case 5:/** flt64 **/
-		printf("\tpopdf regdf\n");
-		printf("\tadddf regdf, accdf\n");
-		break;
-	default:
-		;
-	}
+
+void L_value(int var_type, const char *name)
+{
+	char *type_label = get_type_label(var_type);
+	printf("\tmov%s acc%s, %s\n", type_label, type_label, name);
 }
-void subtract(int type) {
-	printf("\tmov Acc, reg\n");
-	printf("\tpop Acc\n");
-	printf("\tsub reg, Acc\n");
+
+void add(int var_type)
+{
+	char *type_label = get_type_label(var_type);
+	printf("\tpop%s reg%s\n", type_label, type_label);
+	printf("\tadd%s reg%s, acc%s\n", type_label, type_label, type_label);
 }
-void multiply(int type) {
-	printf("\tpop reg\n");
-	printf("\tmul reg, Acc\n");
+
+void subtract(int var_type)
+{
+	char *type_label = get_type_label(var_type);
+	printf("\tmov%s acc%s, reg%s\n", type_label, type_label, type_label);
+	printf("\tpop%s acc%s\n", type_label, type_label);
+	printf("\tsub%s reg%s, acc%s\n", type_label, type_label, type_label);
 }
-void divide(int type) {
-	printf("\tmov Acc, reg\n");
-	printf("\tpop Acc\n");
-	printf("\tdiv reg, Acc\n");
+void multiply(int var_type)
+{
+	char *type_label = get_type_label(var_type);
+	printf("\tpop%s reg%s\n", type_label, type_label);
+	printf("\tmul%s reg%s, acc%s\n", type_label, type_label, type_label);
 }
-void negate(int type) {
-	printf("\tnegate Acc\n");
+void divide(int var_type)
+{
+	char *type_label = get_type_label(var_type);
+
+	printf("\tmov%s acc%s, reg%s\n", type_label, type_label, type_label);
+	printf("\tpop%s acc%s\n", type_label, type_label);
+	printf("\tdiv%s reg%s, acc%s\n", type_label, type_label, type_label);
 }
-void push(int type) {
-	printf("\tpush Acc\n");
+
+void negate(int var_type)
+{
+	char *type_label = get_type_label(var_type);
+	printf("\tnegate%s acc%s\n", type_label, type_label);
 }
-void mov(int type, const char *src) {
-	printf("\tmov %s, Acc\n", src);
+void push(int var_type)
+{
+	char *type_label = get_type_label(var_type);
+	printf("\tpush%s acc%s\n", type_label, type_label);
 }
+
+void mov(int var_type, const char *dest, const char *src)
+{
+	char *typelabel = get_type_label(var_type);
+	printf("\tmov%s %s, %s\n", typelabel, dest, src);
+}
+
+/**********************
+ * jump functions
+ **********************/
+void gofalse(int value)
+{
+	printf("\tgofalse .L%d\n", value);
+}
+
+void golabel(int value)
+{
+	printf("\tgoto .L%d\n", value);
+}
+
+void mklabel(int value)
+{
+	printf(".L%d:\n", value);
+}
+/**********************
+ * end jump functions
+ **********************/

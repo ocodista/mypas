@@ -5,12 +5,15 @@
 #include <string.h>
 #include <constants.h>
 #include <tokens.h>
+#include <keywords.h>
+#include <symtab.h>
+#include <pseudocode.h>
 
 void mypas(void);
 void declarative(void);
 void imperative(void);
 void vardecl(void);
-void sbrdecl(void);
+void sbpdecl(void);
 void varlist(void);
 int typemod(void);
 void procedure(void);

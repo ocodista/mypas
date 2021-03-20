@@ -1,179 +1,134 @@
 /**@<parser.c>::**/
-
-#include <keywords.h>
-#include <pseudocode.h>
-#include <symtab.h>
 #include <parser.h>
 
-/******************************
- * Type token convenction table
- * ----------------------------
- * incomptbl	==	-1
- * void		==	0
- * bool		==	1
- * int32	==	2
- * int64	==	3
- * flt32	==	4
- * flt64	==	5
- ******************************/
-enum
-{
-	INCOMPTBL = -1,
-	VOID,
-	BOOL,
-	INT32,
-	INT64,
-	FLT32,
-	FLT64,
-};
-#define ILGLTYP -1
+/** iscompat table: **/
+/***************************************************************************************************
+ *        bool   int32   int64   flt32   flt64     '+'     '-'     '*'     '/'    NOT    OR    AND
+ * bool   bool   -----   -----   -----   -----    -----   -----   -----   -----  bool   bool   bool
+ * int32  ----   int32   int64   flt32   flt64    int32   int32   int32   int32  ----   ----   ----
+ * int64  ----   int64   int64   flt32   flt64    int64   int64   int64   int64  ----   ----   ----
+ * flt32  ----   flt32   flt32   flt32   flt64    flt32   flt32   flt32   flt32  ----   ----   ----
+ * flt64  ----   flt64   flt64   flt64   flt64    flt64   flt64   flt64   flt64  ----   ----   ----
+ ***************************************************************************************************/
+/***
+ * enum {
+ *	INCOMPTBL = -1,
+ *	VOID,
+ *	BOOL,
+ *	INT32,
+ *	INT64,
+ *	FLT32,
+ *	FLT64,
+ * };
+ ***/
 
-/***************************************************************************************
-  *	   bool  int32  int64  flt32 flt64    +      -      *      /     OR   AND   NOT
-  * bool   bool  -----  -----  ----- -----  -----  -----  -----  -----  bool  bool  bool
-  * int32  ----  int32  int64  flt32 flt64  int32  int32  int32  int32  ----  ----  ----
-  * int64  ----  int64  int64  flt32 flt64  int64  int64  int64  int64  ----  ----  ----
-  * flt32  ----  flt32  flt32  flt32 flt64  flt32  flt32  flt32  flt32  ----  ----  ----
-  * flt64  ----  flt64  flt64  flt64 flt64  flt64  flt64  flt64  flt64  ----  ----  ----
-  ***************************************************************************************/
-
-int iscompat(int acc_type, int sel_type)
+int iscompat(int acc_type, int syn_type)
 {
 	switch (acc_type)
 	{
 	case VOID:
-		return sel_type;
+		return syn_type;
 	case BOOL:
-		switch (sel_type)
-		{
-		case BOOL:
+		if (syn_type == AND || syn_type == OR || syn_type == NOT || syn_type == BOOL)
 			return BOOL;
-		default:
-			return ILGLTYP;
-		}
 		break;
 	case INT32:
-		switch (sel_type)
-		{
-		case INT32:
-		case INT64:
-		case FLT32:
-		case FLT64:
-			return sel_type;
-		case '+':
-		case '-':
-		case '*':
-		case '/':
-			return INT32;
-		default:
-			return ILGLTYP;
-		}
-		break;
-	case INT64:
-		switch (sel_type)
-		{
-		case INT32:
-		case INT64:
-		case '+':
-		case '-':
-		case '*':
-		case '/':
-			return INT64;
-		case FLT32:
-		case FLT64:
-			return sel_type;
-		default:
-			return ILGLTYP;
-		}
+		if (syn_type >= INT32 && syn_type <= FLT64)
+			return syn_type;
 		break;
 	case FLT32:
-		switch (sel_type)
-		{
-		case FLT64:
-			return FLT64;
-		case BOOL:
-			return ILGLTYP;
-		default:
+		if (syn_type > FLT32 && syn_type <= FLT64)
+			return syn_type;
+		if (syn_type == INT32)
 			return FLT32;
-		}
 		break;
 	case FLT64:
-		switch (sel_type)
-		{
-		case BOOL:
-			return ILGLTYP;
-		default:
+		if (syn_type >= INT32 && syn_type <= FLT64)
 			return FLT64;
-		}
-		break;
-	default:
-		return ILGLTYP;
 	}
+	if (acc_type >= INT32 && acc_type <= FLT64)
+	{
+		switch (syn_type)
+		{
+		case '+':
+		case '-':
+		case '*':
+		case '/':
+		case DIV:
+		case MOD:
+			return acc_type;
+		}
+	}
+	return INCOMPTBL;
 }
 
 /*****************************************************************************
  * mypas -> PROGRAM ID ; declarative imperative .
  *****************************************************************************/
+/**/ int lexical_level = 0; /**/
+							/*** objtype = 1 => variable; = 2 => procedure; = 3 => function ***/
+/**/ int objtype;			/**/
+							/*** transp_type = 1 => local storage; = 2 => passage by value; = 3 => passage by reference ***/
+/**/ int transp_type;		/**/
 void mypas(void)
 {
 	match(PROGRAM);
 	match(ID);
 	match(';');
+	/**/ lexical_level++; /**/
 	declarative();
 	imperative();
+	/**/ lexical_level--; /**/
 	match('.');
 }
 /*****************************************************************************
- * declarative -> vardecl sbrdecl
+ * declarative -> vardecl sbpdecl
  *****************************************************************************/
 void declarative(void)
 {
 	vardecl();
-	sbrdecl();
+	sbpdecl();
 }
 /*****************************************************************************
- * vardecl -> [ VAR varlist : typemod ;  { varlist : typemod ; } ]
+ * vardecl ->  [ VAR varlist : typemod ; { varlist : typemod ; } ]
  *****************************************************************************/
 void vardecl(void)
 {
 	if (lookahead == VAR)
 	{
 		match(VAR);
-		/**/ int initial_pos = symtab_nextentry; /**/
+		/**/ int first_pos;				/**/
+		/**/ objtype = transp_type = 1; /**/
 	_varlist_head:
+		/**/ first_pos = symtab_next_entry; /**/
 		varlist();
 		match(':');
 		/**/ int type = /**/ typemod();
-		/**/ for (; initial_pos < symtab_nextentry; initial_pos++)
-		{
-			symtab[initial_pos].type = type;
-		} /**/
+		/**/ symtab_update_type(first_pos, type); /**/
 		match(';');
 		if (lookahead == ID)
 		{
 			goto _varlist_head;
 		}
 	}
+	else
+	{
+		;
+	}
 }
 /*****************************************************************************
  * varlist -> ID { , ID }
  *****************************************************************************/
-/**/ int sem_error = 0; /**/
+/**/ int semantic_error = 0; /**/
 void varlist(void)
 {
-_id_head:
-	/**/
-	if (symtab_append(lexeme) < 0)
-	{
-		fprintf(stderr, "symtab_append: %s already defined. Fatal error.\n", lexeme);
-		sem_error = -1;
-	}
-	/**/
+_match_id_head:
+	/**/ symtab_append(lexeme, lexical_level, objtype, transp_type); /**/
 	match(ID);
 	if (lookahead == ',')
 	{
 		match(',');
-		goto _id_head;
+		goto _match_id_head;
 	}
 }
 /*****************************************************************************
@@ -185,76 +140,66 @@ int typemod(void)
 	switch (lookahead)
 	{
 	case INTEGER:
-		/**/ type = INT32;
+		/**/ type = INT32; /**/
+		break;
 	case REAL:
 		/**/ type = FLT32; /**/
+		break;
 	case DOUBLE:
 		/**/ type = FLT64; /**/
-		match(lookahead);
 		break;
 	default:
 		/**/ type = BOOL; /**/
-		match(BOOLEAN);
 	}
+	match(lookahead);
 	return type;
 }
-/****************************************************************************
- * sbrdecl -> { procedure | function }
- ****************************************************************************/
-void sbrdecl(void)
+
+/*****************************************************************************
+ * sbpdecl -> { PROCEDURE sbphead ; sbptail | FUNCTION sbphead : typemod ; sbptail }
+ *****************************************************************************/
+void sbpdecl(void)
 {
-_sbrdecl_head:
+	/**/ int isfunc = 0;			 /**/
+	/**/ char sbpname[MAXIDLEN + 1]; /**/
+	/**/ int symtab_sentinel;		 /**/
+_switch_head:
 	switch (lookahead)
 	{
-	case PROCEDURE:
-		procedure();
-		goto _sbrdecl_head;
 	case FUNCTION:
-		function();
-		goto _sbrdecl_head;
-		break;
-	default:
-		/** Emulating empty word **/;
+		isfunc = 1;
+	case PROCEDURE:
+		/**/ objtype = 2 + isfunc; /**/
+		match(lookahead);
+		/**/ strcpy(sbpname, lexeme);												   /**/
+		/**/ int sbppos = symtab_append(sbpname, lexical_level, objtype, transp_type); /**/
+		match(ID);
+		/**/ symtab_sentinel = symtab_next_entry; /**/
+		/**/ lexical_level++;					  /**/
+		formparm();
+		if (isfunc)
+		{
+			isfunc = 0;
+			match(':');
+			/**/ int rettype = /**/ typemod();
+			/**/ symtab[sbppos].type = rettype; /**/
+		}
+		else
+		{
+			/**/ symtab[sbppos].type = VOID; /**/
+		}
+		match(';');
+		declarative();
+		imperative();
+		/**/ lexical_level--;					  /**/
+		/**/ symtab_next_entry = symtab_sentinel; /**/
+		match(';');
+		if (lookahead == FUNCTION || lookahead == PROCEDURE)
+		{
+			goto _switch_head;
+		}
+	default:;
 	}
-}
-/****************************************************************************
- * procedure -> PROCEDURE sbrhead ; sbrtail
- ****************************************************************************/
-void procedure(void)
-{
-	match(PROCEDURE);
-	sbrhead();
-	match(';');
-	sbrtail();
-}
-/****************************************************************************
- * function -> FUNCTION sbrhead : typemod ; sbrtail
- ****************************************************************************/
-void function(void)
-{
-	match(FUNCTION);
-	sbrhead();
-	match(':');
-	typemod();
-	match(';');
-	sbrtail();
-}
-/*****************************************************************************
- * sbrhead -> ID formparm
- *****************************************************************************/
-void sbrhead(void)
-{
-	match(ID);
-	formparm();
-}
-/*****************************************************************************
- * sbrtail -> declarative imperative ;
- *****************************************************************************/
-void sbrtail(void)
-{
-	declarative();
-	imperative();
-	match(';');
 }
 /*****************************************************************************
  * formparm -> [ ( [VAR] varlist : typemod { ; [VAR] varlist : typemod } ) ]
@@ -264,20 +209,33 @@ void formparm(void)
 	if (lookahead == '(')
 	{
 		match('(');
-	_parm_head:
+		/**/ int first_pos; /**/
+		/**/ objtype = 1;	/**/
+	parm_list:
+		/**/ first_pos = symtab_next_entry; /**/
 		if (lookahead == VAR)
 		{
 			match(VAR);
+			/**/ transp_type = 3; /**/
+		}
+		else
+		{
+			/**/ transp_type = 2; /**/
 		}
 		varlist();
 		match(':');
-		typemod();
+		/**/ int type = /**/ typemod();
+		/**/ symtab_update_type(first_pos, type); /**/
 		if (lookahead == ';')
 		{
 			match(';');
-			goto _parm_head;
+			goto parm_list;
 		}
 		match(')');
+	}
+	else
+	{
+		;
 	}
 }
 /*****************************************************************************
@@ -286,39 +244,26 @@ void formparm(void)
 void imperative(void)
 {
 	match(BEGIN);
-_stmt_head:
+stmt_list:
 	stmt();
 	if (lookahead == ';')
 	{
 		match(';');
-		goto _stmt_head;
+		goto stmt_list;
 	}
+	match(END);
 }
 /*****************************************************************************
- * stmt -> imperative | ifstmt | whlstmt | rptstmt | F | <empty>
+ * stmt -> imperative | ifstmt | whlstmt | rptstmt | fact | <empty>
  *****************************************************************************/
-int is_first_fact(void)
+void rtrn(void)
 {
-	switch (lookahead)
-	{
-	case '(':
-	case ID:
-	case UINT:
-	case FLOAT:
-	case OCT:
-	case HEX:
-	case '+':
-	case '-':
-	case NOT:
-	case TRUE:
-	case FALSE:
-		return 1;
-	}
-	return 0;
+	match(RETURN);
+	expr(VOID);
 }
 void stmt(void)
 {
-	/**/ int F_type = 0; /**/
+	/**/ int fact_type; /**/
 	switch (lookahead)
 	{
 	case BEGIN:
@@ -333,64 +278,65 @@ void stmt(void)
 	case REPEAT:
 		rptstmt();
 		break;
-	default:
-		if (is_first_fact())
-		{
-			/**/ F_type = /**/ fact(F_type);
-		}
-		else
-		{
-			;
-		}
+	case RETURN:
+		rtrn();
+		break;
+	case '(':
+	case ID:
+	case BOOL:
+	case UINT:
+	case FLOAT:
+		/**/ fact_type = /**/ fact(VOID);
+		break;
+	default:;
 	}
 }
 /*****************************************************************************
  * ifstmt -> IF expr THEN stmt [ ELSE stmt ]
  *****************************************************************************/
-/**/ int labelcount = 1; /**/
+/**/ int loop_count = 1; /**/
 void ifstmt(void)
 {
-	/**/ int expr_type;				/**/
-	/**/ int elsecount, endifcount; /**/
-	match(IF);						/**/
-	expr_type = /**/ expr(BOOL);
+	/**/ int expr_type, else_count, endif_count; /**/
+	match(IF);
+	/**/ expr_type = /**/ expr(BOOL);
 	match(THEN);
-	/**/ printf("\tgofalse .L%d\n", elsecount = endifcount = labelcount++); /**/
+	/**/ gofalse(else_count = endif_count = loop_count++); /**/
 	stmt();
 	if (lookahead == ELSE)
 	{
 		match(ELSE);
-		/**/ printf("\tgoto .L%d\n", endifcount = labelcount++); /**/
-		/**/ printf(".L%d:\n", elsecount);						 /**/
+		/**/
+		golabel(endif_count = loop_count++);
+		mklabel(else_count);
+		/**/
 		stmt();
 	}
-	/**/ printf(".L%d:\n", endifcount); /**/
+	/**/ mklabel(endif_count); /**/
 }
 /*****************************************************************************
  * whlstmt -> WHILE expr DO stmt
  *****************************************************************************/
 void whlstmt(void)
 {
-	/**/ int expr_type, whilelbl, whendlbl; /**/
+	/**/ int expr_type, whlhead, whltail; /**/
 	match(WHILE);
-	/**/ printf(".L%d:\n", whilelbl = labelcount++); /**/
+	/**/ mklabel(whlhead = loop_count++); /**/
 	/**/ expr_type = /**/ expr(BOOL);
 	match(DO);
-	// gofalse()
-	/**/ printf("\tgofalse .L%d\n", whendlbl = labelcount++); /**/
+	/**/ gofalse(whltail = loop_count++); /**/
 	stmt();
-	/**/							  //gotolabel(whilelbl) /**/
-									  //TODO \/ mklabel(whendlbl)
-	/**/ printf(".L%d:\n", whendlbl); /**/
+	/**/ golabel(whlhead); /**/
+	/**/ mklabel(whltail); /**/
 }
 /*****************************************************************************
  * rptstmt -> REPEAT stmt { ; stmt } UNTIL expr
  *****************************************************************************/
 void rptstmt(void)
 {
-	/**/ int expr_type, rptlbl; /**/
-	match(REPEAT);
-	// mklabel(rptlbl=labelcount++);
+	/**/ int expr_type;
+	int replbl;
+	mklabel(replbl = loop_count++); /**/
 stmt_head:
 	stmt();
 	if (lookahead == ';')
@@ -398,70 +344,79 @@ stmt_head:
 		match(';');
 		goto stmt_head;
 	}
-	match(UNTIL); /**/
-	expr_type = /**/ expr(BOOL);
+	match(UNTIL);
+	/**/ expr_type = /**/ expr(BOOL);
+	gofalse(replbl);
 }
-/*****************************************************************************
- * expr -> smpexpr [ relop smpexpr ]
- * relop -> "=" | ">=" | "<=" | "<>"
- *****************************************************************************/
+/* expr -> smpexpr [ relop smpexpr ] */
 int isrelop(void)
 {
 	switch (lookahead)
 	{
 	case '=':
-	case '<':
 	case '>':
+	case '<':
 	case GEQ:
-	case LEQ:
 	case NEQ:
-		return 1;
+	case LEQ:
+		return lookahead;
 	}
 	return 0;
 }
 int expr(int expr_type)
 {
-	/**/ int smpexpr1_type, smpexpr2_type; /**/
-	/**/ smpexpr1_type = /**/ smpexpr(0);
+	/**/ int relop;
+	int left_type, right_type; /**/
+	/**/ left_type = /**/ smpexpr(VOID);
+
 	if (isrelop())
 	{
-		/**/ smpexpr2_type = /**/ smpexpr(smpexpr1_type);
-		return smpexpr2_type;
+		/**/ relop = lookahead; /**/
+		/**/ if (expr_type != BOOL)
+			expr_type = INCOMPTBL; /**/
+
+		match(lookahead);
+
+		/**/ right_type = /**/ smpexpr(left_type);
+		/**/ left_type = iscompat(left_type, right_type); /**/
+		/**/ if (left_type > 0)
+			return expr_type; /**/
 	}
 	else
 	{
-		;
+		/**/ expr_type = iscompat(expr_type, left_type); /**/
 	}
-	return expr_type;
+	/**/ return expr_type; /**/
 }
-/* smpexpr -> ['+''-'] T { (+) T } */
+/* smpexpr -> ['+''-'] term { (+) term } */
 int smpexpr(int smpexpr_type)
 {
-	/**/ int signal = 0, oplus;
-	int T_type; /**/
-	if (lookahead == '+' || lookahead == '-')
+	/**/ int signal = 0; /**/
+	if (lookahead == '+' || lookahead == '-' || lookahead == NOT)
 	{
-		/**/ signal = lookahead;							/**/
-		/**/ smpexpr_type = iscompat(smpexpr_type, signal); /**/
+		/**/ signal = lookahead;							 /**/
+		/***/ smpexpr_type = iscompat(smpexpr_type, signal); /***/
 
 		match(lookahead);
 	}
 
-	/**/ T_type = /**/ term(smpexpr_type);
-	/**/ smpexpr_type = iscompat(smpexpr_type, T_type); /**/
-	/**/ if (signal == '-')
-		negate(smpexpr_type); /**/
+	/***/ int term_type = /***/ term(smpexpr_type);	  /**/
+	smpexpr_type = iscompat(smpexpr_type, term_type); /**/
+	/**/ if (signal == '-' || signal == NOT)
+		negate(smpexpr_type);								/**/
+	/***/ smpexpr_type = iscompat(smpexpr_type, term_type); /***/
 
-	while (lookahead == '+' || lookahead == '-')
+	while (lookahead == '+' || lookahead == '-' || lookahead == OR)
 	{
-		/**/ oplus = lookahead;							   /**/
-		/**/ smpexpr_type = iscompat(smpexpr_type, oplus); /**/
-		/**/ push(smpexpr_type);						   /**/
+		/**/ int oplus = lookahead;							/**/
+		/***/ smpexpr_type = iscompat(smpexpr_type, oplus); /***/
+		/**/ push(smpexpr_type);							/**/
 
-		match(lookahead); /**/
-		T_type = /**/ term(smpexpr_type);
+		match(lookahead); /***/
+		term_type = /***/ term(smpexpr_type);
 
-		/**/ smpexpr_type = iscompat(smpexpr_type, T_type); /**/
+		/***/ smpexpr_type = iscompat(smpexpr_type, term_type); /***/
+		/**/ mov(smpexpr_type, "acc", "aux");					/**/
 
 		/**/
 		switch (oplus)
@@ -475,27 +430,28 @@ int smpexpr(int smpexpr_type)
 		/**/
 	}
 
-	/**/ return smpexpr_type; /**/
+	/***/ return smpexpr_type; /***/
 }
 
-/* T -> F { (*) F } */
+/* term -> fact { (*) fact } */
 int term(int term_type)
 {
-	/**/ int fact_type; /**/
+	/***/ int fact_type = /***/ fact(term_type); /**/
+	term_type = iscompat(term_type, fact_type);	 /**/
 
-	/**/ fact_type = /**/ fact(term_type);
-	/**/ term_type = iscompat(term_type, fact_type); /**/
-
-	while (lookahead == '*' || lookahead == '/')
+	while (lookahead == '*' || lookahead == '/' || lookahead == DIV | lookahead == MOD | lookahead == AND)
 	{
-		/**/ int otimes = lookahead;				  /**/
-		/**/ term_type = iscompat(term_type, otimes); /**/
-		/**/ push(term_type);						  /**/
+		/**/ int otimes = lookahead;				   /**/
+		/***/ term_type = iscompat(term_type, otimes); /***/
+		/**/ push(term_type);						   /**/
 
-		match(lookahead); /**/
-		fact_type = /**/ fact(term_type);
+		match(lookahead);
 
-		/**/ term_type = iscompat(term_type, fact_type); /**/
+		/***/ fact_type = /***/ fact(term_type);
+
+		/***/ term_type = iscompat(term_type, fact_type); /***/
+
+		/**/ mov(term_type, "acc", "aux"); /**/
 
 		/**/
 		switch (otimes)
@@ -509,51 +465,115 @@ int term(int term_type)
 		/**/
 	}
 
-	/**/ return term_type; /**/
+	/***/ return term_type; /***/
 }
 
-/*  F ->  ( expr )
- *      | n
- *      | v [ = expr ] */
+/*  fact ->  ( expr )
+ *       | n
+ *       | v [ = expr ]
+ */
+int getnumtype(const char *);
+
 int fact(int fact_type)
 {
-	/**/ char name[MAXIDLEN + 1];
-	int expr_type;
-	int var_descriptor; /**/
+	/**/ char name[MAXIDLEN + 1]; /**/
+	/***/ int expr_type;		  /***/
+
 	switch (lookahead)
 	{
 	case '(':
-		match('('); /**/
-		expr_type = /**/ expr(fact_type);
+		match('('); /***/
+		expr_type = /***/ expr(fact_type);
 		match(')');
+		/***/ fact_type = iscompat(fact_type, expr_type); /***/
+		break;
+	case BOOL:
+		/***/ fact_type = iscompat(fact_type, BOOL); /***/
+		/**/ mov(fact_type, lexeme, "acc");			 /**/
+
+		match(BOOL);
 		break;
 	case UINT:
-		/**/ mov(fact_type, lexeme); /**/
+		/***/ fact_type = iscompat(fact_type, INT32); /***/
+		/**/ mov(fact_type, lexeme, "acc");			  /**/
+
 		match(UINT);
 		break;
 	case FLOAT:
+		/***/ fact_type = iscompat(fact_type, FLT32); /***/
+		/**/ mov(fact_type, lexeme, "acc");			  /**/
+
 		match(FLOAT);
 		break;
 	default:
 		/**/ strcpy(name, lexeme); /**/
-		/**/
-		if ((var_descriptor = symtab_lookup(name)) < 0)
-		{
-			fprintf(stderr, "symtab_lookup: %s not declared\n", name);
-			sem_error = -2;
-		}
-		/**/
+
 		match(ID);
 		if (lookahead == ASGN)
 		{
-			match(ASGN);
-			expr(fact_type);
-			/**/ L_value(fact_type, name); /**/
+			/**** L-Value ****/
+			match(ASGN); /***/
+			expr_type = /***/ expr(fact_type);
+			/**/
+			if (symtab_lookup(name) < 0)
+			{
+				fprintf(stderr, "%s undeclared\n", name);
+				semantic_error++;
+			}
+			else
+			{
+				if (symtab[symtab_entry].objtype != 1)
+				{
+					fprintf(stderr, "%s cannot be an L-Value\n", name);
+					semantic_error++;
+				}
+				else
+				{
+					fact_type = iscompat(expr_type, symtab[symtab_entry].type);
+					/*** variable entry in symbol table is set in symtab_entry ***/
+					mov(fact_type, "acc", symtab[symtab_entry].offset);
+				}
+			}
+			/**/
 		}
 		else
 		{
-			/**/ R_value(fact_type, name); /**/
-			;
+			/**** R-Value ****/
+			/**/
+			if (symtab_lookup(name) < 0)
+			{
+				fprintf(stderr, "%s undeclared\n", name);
+				semantic_error++;
+			}
+			else
+			{
+				switch (symtab[symtab_entry].objtype)
+				{
+				case 1:
+					fact_type = iscompat(fact_type, symtab[symtab_entry].type);
+					/*** variable entry in symbol table is set in symtab_entry ***/
+					mov(fact_type, symtab[symtab_entry].offset, "acc");
+					break;
+				case 3:
+					if (lookahead == '(')
+					{
+						match('(');
+					_expr_list:
+						expr(VOID);
+						if (lookahead == ',')
+						{
+							match(',');
+							goto _expr_list;
+						}
+						match(')');
+					}
+					fact_type = iscompat(fact_type, symtab[symtab_entry].type);
+					/*** variable entry in symbol table is set in symtab_entry ***/
+					mov(fact_type, symtab[symtab_entry].offset, "acc");
+					break;
+				}
+			}
+			/**/
 		}
 	}
 	return fact_type;

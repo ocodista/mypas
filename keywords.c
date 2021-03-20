@@ -1,7 +1,7 @@
 #include <string.h>
 #include <keywords.h>
 
-char *keyword[] = { 
+char *keyword[] = {
 	"begin",
 	"not",
 	"and",
@@ -25,14 +25,17 @@ char *keyword[] = {
 	"until",
 	"true",
 	"false",
+	"return",
 	"end",
 };
 
 int iskeyword(const char *name)
 {
 	int i;
-	for (i = BEGIN; i < END + 1; i++) {
-		if (strcmp(keyword[i - BEGIN], name) == 0) return i;
+	for (i = BEGIN; i < END + 1; i++)
+	{
+		if (strcmp(keyword[i - BEGIN], name) == 0)
+			return i;
 	}
 	return 0;
 }

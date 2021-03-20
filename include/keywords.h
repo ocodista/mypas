@@ -1,7 +1,9 @@
+#pragma once
 int iskeyword(const char *);
 
-enum {
-	BEGIN =  10001,
+enum
+{
+	BEGIN = 10001,
 	NOT,
 	AND,
 	OR,
@@ -24,7 +26,6 @@ enum {
 	UNTIL,
 	TRUE,
 	FALSE,
+	RETURN,
 	END,
 };
-
-
