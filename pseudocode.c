@@ -27,6 +27,13 @@ void L_value(int var_type, const char *name)
 
 /************************************************
  * Generate assembly pseudocode for function add
+ * 
+ * STEPS: 
+ * 
+ * Gets correct accumulador based on var_type
+ * Gets correct register based on var_Type
+ * POP register(var_type_label)
+ * ADD reg + acc
  ************************************************/
 void add(int var_type)
 {
@@ -37,6 +44,12 @@ void add(int var_type)
 	printf("\tadd%s %s, %s\n", type_label, reg_label, acc_label);
 }
 
+/******************************************************
+ * Generate assembly pseudocode to simulate subtraction
+ * 
+ * Between acc(var_type_label) and reg(var_type_label)
+ * Where var_type_label varies according with var_type
+ ******************************************************/
 void subtract(int var_type)
 {
 	char *acc_label = get_var_label(var_type, "acc");
@@ -113,11 +126,13 @@ void cmp(int relop, int var_type, char *left_operator, char *right_operator)
 /**********************
  * jump functions
  **********************/
+// Pseudocode of gofalse functions
 void gofalse(int value)
 {
 	printf("\tgofalse .L%d\n", value);
 }
 
+// Pseudocode of goto function
 void golabel(int value)
 {
 	printf("\tgoto .L%d\n", value);
