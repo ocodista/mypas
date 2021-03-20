@@ -28,7 +28,17 @@ enum
     PASS_BY_REF,
 };
 
-// Enum with variable types
+/*********************************
+ * VAR TYPE TABLE
+ * 
+ * -1 - Incompatible
+ * 0 - Void
+ * 1 - Boolean
+ * 2 - Int 32
+ * 3 - Int 64
+ * 4 - Float 32
+ * 5 - Float 64
+ *********************************/
 enum
 {
     INCOMPTBL = -1,

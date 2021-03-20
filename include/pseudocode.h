@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <enums.h>
+#include <utils.h>
 
 /****************************
  * assign/retrive functions
