@@ -421,10 +421,13 @@ void whlstmt(void)
  *****************************************************************************/
 void rptstmt(void)
 {
-	/**/ int expr_type;
 	int replbl;
+
+	// Create a label to create a loop in assembly
 	mklabel(replbl = loop_count++); /**/
 stmt_head:
+
+	// Execute statement
 	stmt();
 	if (lookahead == SEMICOLON)
 	{
@@ -432,7 +435,12 @@ stmt_head:
 		goto stmt_head;
 	}
 	match(UNTIL);
-	/**/ expr_type = /**/ expr(BOOL);
+
+	// Evaluates the expression
+	/**/ expr(BOOL); /**/
+
+	// Prints gofalse command to jump to the start
+	// Of the loop
 	/**/ gofalse(replbl); /**/
 }
 
@@ -458,7 +466,11 @@ int isrelop(void)
 }
 
 /**************************************
+ * Evaluates the value of an expression
+ * 
+ * SYNTAX:
  * expr -> smpexpr [ relop smpexpr ]
+ * returns expr_type
  **************************************/
 int expr(int expr_type)
 {
@@ -520,12 +532,16 @@ int do_relop(int expr_type, int left_type)
 	return expr_type;
 }
 
-/****************************************
+/***********************************************************
+ * This function validates the operations oplus(+, - and OR)
+ * 
+ * SYNTAX:
  * smpexpr -> ['+'|'-'| NOT] term { oplus term } 
  * oplus -> + | - | OR
- ****************************************/
+ ************************************************************/
 int smpexpr(int smpexpr_type)
 {
+	// Use to know if signal is positive or negative
 	/**/ int signal = 0; /**/
 
 	if (lookahead == '+' || lookahead == '-' || lookahead == NOT)
@@ -550,6 +566,7 @@ _oplus:
 	case '+':
 	case '-':
 	case OR:
+		// Executes oplus operation (with pseudocode.c methods)
 		/**/ smpexpr_type = /**/ do_oplus(term_type, smpexpr_type);
 		goto _oplus;
 		break;
@@ -796,9 +813,9 @@ int validate_l_value(int expr_type, int fact_type, char *name)
 /*******************************************************************************
  * In this function, the goal is to identify object type  as variable, function
  * or parameter, validate if entry exists on system table and call pseudocode 
- * mov to represent return of value
+ * mov to represent return of value or procedure/function
  * 
- * Returns 'parsed' fact_type
+ * Returns fact_type
  *******************************************************************************/
 int validate_r_value(int fact_type, char *name)
 {
@@ -827,6 +844,7 @@ int validate_r_value(int fact_type, char *name)
 			if (lookahead == OPEN_PARENTHESES)
 			{
 				match(OPEN_PARENTHESES);
+				// Calculate expression for parameters
 			_expr_list:
 				expr(VOID);
 				if (lookahead == COMMA)
@@ -837,6 +855,8 @@ int validate_r_value(int fact_type, char *name)
 				match(CLOSE_PARENTHESES);
 			}
 
+			// Identifies accumulator to be used according with fact_type
+			// Uses mov function to add value to acc(fact_type)
 			fact_type = mov_compat_type(fact_type);
 			break;
 		}
