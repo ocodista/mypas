@@ -19,11 +19,11 @@ typedef struct __symtab__
 	int transp_type;
 } SYMTAB;
 
-// int symtab_rtrvtype(const char *symbol, int lexical_level);
-int symtab_lookup(const char *);
 int symtab_append(const char *symbol, int lexical_level, int objtype, int transp_type);
+int symtab_lookup(const char *);
 void symtab_update_type(int, int);
 
+// Variables declared at symtab.c
 extern SYMTAB symtab[MAXSTBENTRIES];
 extern int symtab_next_entry;
 extern int semantic_error;
