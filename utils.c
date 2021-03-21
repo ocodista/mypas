@@ -83,5 +83,5 @@ char *get_object_type_label(int object_type)
 void show_error(char *message)
 {
     fprintf(stderr, "Error at line %d => %s!\n", line_number, message);
-    exit(-2);
+    exit(1);
 }

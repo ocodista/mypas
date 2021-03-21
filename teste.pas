@@ -22,7 +22,6 @@ program Teste;
 
 	{ imperative scope }
 	begin
-
 		t := w * fact (j)
 	end.
 

@@ -10,13 +10,18 @@ program Teste;
 
 		{ Imperative scope }
 		begin
-			abacaxi := n + 1;
+			abacaxi := n;
+			if n <= 2 then
+				abacaxi := n * 2
+			else
+				abacaxi := n / 2;
 		end;
 
 	{ imperative scope }
 	begin
-
         A(2);
+		A(4);
+		A(6);
 	end.
 
 	O resto é comentário

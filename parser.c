@@ -880,7 +880,7 @@ int mov_compat_type(int obj_type)
 	/**/ char *acc_label = get_var_label(compat_type, "acc"); /**/
 
 	/*** Value from compat_type is set to entry[offset] ***/
-	mov(compat_type, acc_label, symtab[symtab_entry].offset);
+	mov(compat_type, symtab[symtab_entry].offset, acc_label);
 
 	return compat_type;
 }
