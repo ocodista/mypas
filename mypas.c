@@ -18,12 +18,6 @@
  * It allows the input to be stdin or a physical file on disk
  **********************************************************************/
 
-// This functions can be found at parser.c
-void mypas(void);
-
-// This function can be found at lexer.c
-int gettoken(FILE *);
-
 // This int will be used as a one-character buffer
 int lookahead;
 

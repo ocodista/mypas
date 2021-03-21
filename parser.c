@@ -637,9 +637,8 @@ int validate_l_value(int expr_type, int fact_type, char *name)
 	{
 		// Cant assign an undeclared entry
 		snprintf(message, sizeof(message), "%s was not declared", name);
-		show_error(message);
-
 		semantic_error++;
+		show_error(message);
 	}
 	else
 	{
@@ -680,7 +679,7 @@ int validate_r_value(int fact_type, char *name)
 	if (symtab_lookup(name) < 0)
 	{
 		// Cannot use undeclared id
-		snprintf(message, sizeof(message), "%s was not declared", name);
+		snprintf(message, sizeof(message), "%s was not declared 2", name);
 		show_error(message);
 		semantic_error++;
 	}
@@ -764,13 +763,6 @@ int mov_var_type(int fact_type, int var_type)
 
 void match(int expected)
 {
-	if (semantic_error > 0)
-	{
-		show_error(message);
-		semantic_error--;
-		return;
-	}
-
 	if (lookahead == expected)
 	{
 		lookahead = gettoken(source);
