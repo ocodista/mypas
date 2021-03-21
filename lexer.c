@@ -9,15 +9,16 @@ int column = 1;
 char lexeme[MAXIDLEN + 1];
 int line_number = 1;
 
-/***************************************
- * Ignores spaces and comments from tape
- ***************************************/
+/******************************************
+ * Ignores spaces and comments from input
+ ******************************************/
 void skipunused(FILE *tape)
 {
 	int head;
 _skipspaces:
 	while (isspace(head = getc(tape)))
 	{
+		// With this line we're able to identify the line of an error if any one happens
 		if (head == '\n')
 			line_number++;
 	}
@@ -382,7 +383,10 @@ int isASGN(FILE *tape)
 	ungetc(lexeme[i], tape);
 	return 0;
 }
-
+/**********************************************
+ * In this method, we check if the next sequence
+ * of the tape is = | > | >= | < | <= | <>
+ **********************************************/
 int isRELOP(FILE *tape)
 {
 	int i = 0;
