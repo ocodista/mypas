@@ -14,9 +14,17 @@ char message[100];
 // Explanation for valid values for next variables can be found at enums.h
 /**/ int objtype;	  /**/
 /**/ int transp_type; /**/
+
+// Counter for semantic errors
+/**/ int semantic_error = 0; /**/
+
 /*********************************
  * End of declaration of variables 
  *********************************/
+
+/**********************************
+ * Internal subroutines
+ **********************************/
 
 /*****************************************************************************
  * mypas -> PROGRAM ID ; declarative imperative .
@@ -41,8 +49,10 @@ void declarative(void)
 	sbpdecl();
 }
 
-/** iscompat table: **/
 /***************************************************************************************************
+ * This function is used to map the compatibility between two types of variable
+ * 
+ * iscompat table: 
  *        bool   int32   int64   flt32   flt64     '+'     '-'     '*'     '/'    NOT    OR    AND
  * bool   bool   -----   -----   -----   -----    -----   -----   -----   -----  bool   bool   bool
  * int32  ----   int32   int64   flt32   flt64    int32   int32   int32   int32  ----   ----   ----
@@ -50,7 +60,6 @@ void declarative(void)
  * flt32  ----   flt32   flt32   flt32   flt64    flt32   flt32   flt32   flt32  ----   ----   ----
  * flt64  ----   flt64   flt64   flt64   flt64    flt64   flt64   flt64   flt64  ----   ----   ----
  * 
- * This function is used to map the compatibility between two types of variable
  ***************************************************************************************************/
 int iscompat(int acc_type, int syn_type)
 {
@@ -119,10 +128,10 @@ void vardecl(void)
 		;
 	}
 }
+
 /*****************************************************************************
  * varlist -> ID { , ID }
  *****************************************************************************/
-/**/ int semantic_error = 0; /**/
 void varlist(void)
 {
 _match_id_head:
@@ -245,6 +254,7 @@ void formparm(void)
 		;
 	}
 }
+
 /*****************************************************************************
  * imperative -> BEGIN stmt { ; stmt } END
  *****************************************************************************/
@@ -387,39 +397,62 @@ int isrelop(void)
  **************************************/
 int expr(int expr_type)
 {
-	/**/ int relop;
-	int left_type, right_type; /**/
-	/**/ left_type = /**/ smpexpr(VOID);
+	/**/ int left_type = /**/ smpexpr(VOID);
 
 	if (isrelop())
 	{
-		/**/ relop = lookahead;							  /**/
-														  // Here, we call get_var_label passing the smpexpr_type to
-														  // Get the correct accumulator and aux, according to var type
-		/**/ char *acc = get_var_label(left_type, "acc"); /**/
-		/**/ char *aux = get_var_label(left_type, "aux"); /**/
-		/**/ mov(left_type, acc, aux);					  /**/
-
-		/**/ if (expr_type != BOOL)
-			expr_type = INCOMPTBL; /**/
-
-		match(lookahead);
-
-		/**/ right_type = /**/ smpexpr(left_type);
-		/**/ left_type = iscompat(left_type, right_type); /**/
-		/**/
-		if (left_type > 0)
-		{
-			cmp(relop, left_type, "aux", "acc");
-			return expr_type;
-		}
-		/**/
+		expr_type = do_relop(expr_type, left_type);
 	}
 	else
 	{
 		/**/ expr_type = iscompat(expr_type, left_type); /**/
 	}
 	/**/ return expr_type; /**/
+}
+
+/***********************************************
+ * Validates if relop is valid
+ * 
+ * Add left side to correct accumulator
+ * Uses comp function from pseudocode to compare
+ ************************************************/
+int do_relop(int expr_type, int left_type)
+{
+	/**/ int relop, right_type; /**/
+
+	// Identifies relop operator
+	/**/ relop = lookahead; /**/
+
+	// Here, we call get_var_label passing the smpexpr_type to
+	// Get the correct accumulator and aux, according to var type
+	/**/ char *acc = get_var_label(left_type, "acc"); /**/
+	/**/ char *aux = get_var_label(left_type, "aux"); /**/
+
+	// Set save left_type value to accumulator
+	/**/ mov(left_type, acc, aux); /**/
+
+	// If expression_type is not boolean(is not a condition/validation)
+	// then set expr_type to incompatible;
+	/**/ if (expr_type != BOOL)
+		expr_type = INCOMPTBL; /**/
+
+	match(lookahead);
+
+	/**/ right_type = /**/ smpexpr(left_type);
+	/**/ left_type = iscompat(left_type, right_type); /**/
+	/**/
+	if (left_type != VOID)
+	{
+		cmp(relop, left_type, "aux", "acc");
+		return expr_type;
+	}
+	else
+	{
+		show_error("Left side of comparation cannot be null");
+	}
+	/**/
+
+	return expr_type;
 }
 
 /****************************************
@@ -482,28 +515,33 @@ int term(int term_type)
 {
 	/***/
 	int fact_type = /***/ fact(term_type);
-	char *acc_label;
+	char *acc_label, *aux_label;
 
+	// Check compatibility with next term
 	/**/ term_type = iscompat(term_type, fact_type); /**/
 
+	// Realize math operations between terms
 	while (lookahead == '*' || lookahead == '/' || lookahead == DIV | lookahead == MOD | lookahead == AND)
 	{
-		/**/ int otimes = lookahead;				   /**/
-		/***/ term_type = iscompat(term_type, otimes); /***/
-		/**/ acc_label = get_var_label(term_type, "acc");
-		/**/ push(term_type, acc_label); /**/
+		/**/ int otimes = lookahead;					  /**/
+		/***/ term_type = iscompat(term_type, otimes);	  /***/
+		/**/ acc_label = get_var_label(term_type, "acc"); /**/
+		/**/ push(term_type, acc_label);				  /**/
 
 		match(lookahead);
 
+		// Calculates value of next fact
 		/***/ fact_type = /***/ fact(term_type);
 
+		// Gets compatible type from returned fact
 		/***/ term_type = iscompat(term_type, fact_type); /***/
 
 		// Here, we call get_var_label passing the term_type to
 		// Get the correct accumulator and aux, according to var type
+
 		/**/ acc_label = get_var_label(term_type, "acc"); /**/
-		/**/ char *aux = get_var_label(term_type, "aux"); /**/
-		/**/ mov(term_type, acc_label, aux);			  /**/
+		/**/ aux_label = get_var_label(term_type, "aux"); /**/
+		/**/ mov(term_type, acc_label, aux_label);		  /**/
 
 		/**/
 		switch (otimes)
@@ -520,132 +558,207 @@ int term(int term_type)
 	/***/ return term_type; /***/
 }
 
-/**************************************
- *  fact ->  ( expr )
- *       | n
- *       | v [ = expr ]
- ***************************************/
+/**************************************************
+ * FACT ->  ( expr ) | n | v [ = expr ]
+ * 
+ * This function handles:
+ * - The call of an expression returning its value
+ * - The value of a variable
+ * - An assigment 
+ **************************************************/
 int fact(int fact_type)
 {
 	/**/ char name[MAXIDLEN + 1]; /**/
 	/***/ int expr_type;		  /***/
-	/**/ char *acc = malloc(6);	  /**/
 	switch (lookahead)
 	{
 	case OPEN_PARENTHESES:
-		match(OPEN_PARENTHESES); /***/
-		expr_type = /***/ expr(fact_type);
+		match(OPEN_PARENTHESES);
+
+		/***/ expr_type = /***/ expr(fact_type);
 		match(CLOSE_PARENTHESES);
 		/***/ fact_type = iscompat(fact_type, expr_type); /***/
 		break;
-	case BOOL:
-		/***/ fact_type = iscompat(fact_type, BOOL); /***/
-													 // Get the correct accumulator according to var type
-		/**/ acc = get_var_label(fact_type, "acc");	 /**/
-		/**/ mov(fact_type, lexeme, acc);			 /**/
 
+	// Gets compatible type and store into acc
+	// BOOL -> accb
+	// UINT -> accl
+	// FLT32 -> accf
+	case BOOL:
+		fact_type = mov_var_type(fact_type, BOOL);
 		match(BOOL);
 		break;
 	case UINT:
-		/***/ fact_type = iscompat(fact_type, INT32); /***/
-													  // Get the correct accumulator according to var type
-		/**/ acc = get_var_label(fact_type, "acc");	  /**/
-		/**/ mov(fact_type, lexeme, acc);			  /**/
-
+		fact_type = mov_var_type(fact_type, INT32);
 		match(UINT);
 		break;
 	case FLOAT:
-		/***/ fact_type = iscompat(fact_type, FLT32); /***/
-													  // Get the correct accumulator according to var type
-		/**/ acc = get_var_label(fact_type, "acc");	  /**/
-		/**/ mov(fact_type, lexeme, acc);			  /**/
-
+		fact_type = mov_var_type(fact_type, FLT32);
 		match(FLOAT);
 		break;
 	default:
-		/**/ strcpy(name, lexeme);		  /**/
-		/**/ char *ot_label = malloc(10); /**/
+
+		/**/ strcpy(name, lexeme); /**/
+
 		match(ID);
 		if (lookahead == ASGN)
 		{
 			/**** L-Value ****/
-			match(ASGN);					   /***/
-			expr_type = /***/ expr(fact_type); /**/
-			if (symtab_lookup(name) < 0)
-			{
-				snprintf(message, sizeof(message), "Variable %s was not declared", name);
-				semantic_error++;
-			}
-			else
-			{
-				if (symtab[symtab_entry].objtype != OT_VARIABLE)
-				{
-					ot_label = get_object_type_label(symtab[symtab_entry].objtype);
-					snprintf(message, sizeof(message), "%s %s cannot be used as variable (left-assign)", ot_label, name);
-					semantic_error++;
-				}
-				else
-				{
-					fact_type = iscompat(expr_type, symtab[symtab_entry].type);
-					// Get the correct accumulator according to var type
-					/**/ acc = get_var_label(fact_type, "acc"); /**/
-					/*** variable entry in symbol table is set in symtab_entry ***/
-					mov(fact_type, acc, symtab[symtab_entry].offset);
-				}
-			}
-			/**/
+			/**/ fact_type = validate_l_value(expr_type, fact_type, name); /**/
 		}
 		else
 		{
 			/**** R-Value ****/
-			/**/
-			if (symtab_lookup(name) < 0)
-			{
-				snprintf(message, sizeof(message), "Variable %s was not declared", name);
-				semantic_error++;
-			}
-			else
-			{
-				switch (symtab[symtab_entry].objtype)
-				{
-				case OT_VARIABLE:
-					fact_type = iscompat(fact_type, symtab[symtab_entry].type);
-					// Get the correct accumulator according to var type
-					/**/ acc = get_var_label(fact_type, "acc"); /**/
-
-					/*** variable entry in symbol table is set in symtab_entry ***/
-					mov(fact_type, symtab[symtab_entry].offset, acc);
-					break;
-
-				case OT_PROCEDURE:
-					// TODO: Implement call of procedure
-					break;
-
-				case OT_FUNCTION:
-					if (lookahead == OPEN_PARENTHESES)
-					{
-						match(OPEN_PARENTHESES);
-					_expr_list:
-						expr(VOID);
-						if (lookahead == COMMA)
-						{
-							match(COMMA);
-							goto _expr_list;
-						}
-						match(CLOSE_PARENTHESES);
-					}
-					fact_type = iscompat(fact_type, symtab[symtab_entry].type);
-					// Get the correct accumulator according to var type
-					/**/ acc = get_var_label(fact_type, "acc"); /**/
-
-					/*** variable entry in symbol table is set in symtab_entry ***/
-					mov(fact_type, symtab[symtab_entry].offset, acc);
-					break;
-				}
-			}
-			/**/
+			/**/ fact_type = validate_r_value(fact_type, name); /**/
 		}
 	}
+	return fact_type;
+}
+/**************************************************************************
+ * Once identified that next token is ASGN, validates if left-side of 
+ * expression is valid, checking if entry was already declared at symtab
+ * and checking if object type is assignable 
+ * 
+ * Returns 'parsed' fact_type
+ ****************************************************************************/
+int validate_l_value(int expr_type, int fact_type, char *name)
+{
+	// Labels will be used to identify correct accumulator and object type
+	/**/ char *acc_label; /**/
+	/**/ char *ot_label;  /**/
+
+	match(ASGN);
+
+	// Identifies expression type
+	/***/ expr_type = /***/ expr(fact_type);
+
+	// Checks if symbol table has any entry where symbol == name
+	if (symtab_lookup(name) < 0)
+	{
+		// Cant assign an undeclared entry
+		snprintf(message, sizeof(message), "%s was not declared", name);
+		show_error(message);
+
+		semantic_error++;
+	}
+	else
+	{
+		// Validates if entry is variable
+		if (symtab[symtab_entry].objtype != OT_VARIABLE)
+		{
+			// Gets label from object type (Function or Parameter)
+			ot_label = get_object_type_label(symtab[symtab_entry].objtype);
+
+			// Throws error because function/parameter shouldn't exist on left side of assignment
+			snprintf(message, sizeof(message), "%s %s cannot be used as variable (left-assign)", ot_label, name);
+			show_error(message);
+
+			semantic_error++;
+		}
+		else
+		{
+			// Assign value to declared variable located at symtab[symtab_entry]
+			fact_type = mov_compat_type(expr_type);
+		}
+	}
+	return fact_type;
+}
+
+/*******************************************************************************
+ * In this function, the goal is to identify object type  as variable, function
+ * or parameter, validate if entry exists on system table and call pseudocode 
+ * mov to represent return of value
+ * 
+ * Returns 'parsed' fact_type
+ *******************************************************************************/
+int validate_r_value(int fact_type, char *name)
+{
+	// Account label is used to identify accumulator according with fact_type
+	/**/ char *acc_label; /**/
+
+	// Checks if entry exists on system table
+	if (symtab_lookup(name) < 0)
+	{
+		// Cannot use undeclared id
+		snprintf(message, sizeof(message), "%s was not declared", name);
+		show_error(message);
+		semantic_error++;
+	}
+	else
+	{
+		switch (symtab[symtab_entry].objtype)
+		{
+		case OT_VARIABLE:
+			// Set value of fact_type into accumulator
+			fact_type = mov_compat_type(fact_type);
+			break;
+
+		case OT_PROCEDURE:
+			// TODO: Implement call of procedure
+			break;
+
+		case OT_FUNCTION:
+			if (lookahead == OPEN_PARENTHESES)
+			{
+				match(OPEN_PARENTHESES);
+			_expr_list:
+				expr(VOID);
+				if (lookahead == COMMA)
+				{
+					match(COMMA);
+					goto _expr_list;
+				}
+				match(CLOSE_PARENTHESES);
+			}
+
+			fact_type = mov_compat_type(fact_type);
+			return fact_type;
+			break;
+		}
+	}
+	return fact_type;
+}
+
+/**************************************************************************
+ * This function is used to parse the obj_type variable using the 
+ * iscompat table, then calling mov function from pseudocode.c to simulate 
+ * the store of symtab[symtab_entry] value into correct accumulator
+ * 
+ * Returns 'parsed' fact_type
+ ****************************************************************************/
+int mov_compat_type(int obj_type)
+{
+	// Get compatible type from iscompat table
+	/**/ int compat_type = iscompat(obj_type, symtab[symtab_entry].type); /**/
+
+	// Get the correct accumulator according to var type
+	/**/ char *acc_label = get_var_label(compat_type, "acc"); /**/
+
+	/*** Value from compat_type is set to entry[offset] ***/
+	mov(compat_type, acc_label, symtab[symtab_entry].offset);
+
+	return compat_type;
+}
+
+/****************************************************************************
+ * This function translate var_type into compatible type from iscompat table 
+ * and prints mov command setting fact_type value to correct accumulator
+ * 
+ * Returns 'parsed' fact_type
+ ****************************************************************************/
+int mov_var_type(int fact_type, int var_type)
+{
+	char *acc_label;
+
+	// Gets compatible type from iscompat table
+	/***/ fact_type = iscompat(fact_type, var_type); /***/
+
+	// Get the correct accumulator according to var type
+	/**/ acc_label = get_var_label(fact_type, "acc"); /**/
+
+	// Calls pseucode to represent mov command
+	/**/ mov(fact_type, lexeme, acc_label); /**/
+
 	return fact_type;
 }
 
