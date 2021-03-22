@@ -1,6 +1,7 @@
 /**@<tokens.h>::**/
 #pragma once
 
+// Enum containing all tokens used by compiler
 enum
 {
 	ID = 1024,

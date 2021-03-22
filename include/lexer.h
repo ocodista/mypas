@@ -7,6 +7,15 @@
 #include <constants.h>
 #include <keywords.h>
 
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
 /*********************
  * external variables
  *********************/

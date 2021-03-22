@@ -60,6 +60,12 @@ void subtract(int var_type)
 	printf("\tsub%s %s, %s\n", type_label, reg_label, acc_label);
 }
 
+/******************************************************
+ * Generate assembly pseudocode to simulate multiplication
+ * 
+ * Between acc(var_type_label) and reg(var_type_label)
+ * Where var_type_label varies according with var_type
+ ******************************************************/
 void multiply(int var_type)
 {
 	char *acc_label = get_var_label(var_type, "acc");
@@ -70,6 +76,12 @@ void multiply(int var_type)
 	printf("\tmul%s %s, %s\n", type_label, reg_label, acc_label);
 }
 
+/******************************************************
+ * Generate assembly pseudocode to simulate division
+ * 
+ * Between acc(var_type_label) and reg(var_type_label)
+ * Where type_label varies according with var_type
+ ******************************************************/
 void divide(int var_type)
 {
 	char *acc_label = get_var_label(var_type, "acc");
@@ -80,35 +92,65 @@ void divide(int var_type)
 	printf("\tdiv%s %s, %s\n", type_label, reg_label, acc_label);
 }
 
+/***********************************************************
+ * Generate assembly pseudocode to simulate function negate
+ * 
+ * Where type_label varies according with var_type
+ ******************************************************/
 void negate(int var_type)
 {
 	char *type_label = get_var_type_id(var_type);
 	printf("\tnegate%s acc%s\n", type_label, type_label);
 }
 
+/********************************************************
+ * Generate assembly pseudocode to simulate pop of stack
+ * 
+ * Gets the type_label to switch pop and uses address to 
+ * pop from stack
+ *******************************************************/
 void pop(int var_type, char *address)
 {
 	char *type_label = get_var_type_id(var_type);
 	printf("\tpop%s %s\n", type_label, address);
 }
 
+/********************************************************
+ * Generate assembly pseudocode to simulate psuh of stack
+ * 
+ * Gets the type_label to switch push and uses address to 
+ * pop from stack
+ *******************************************************/
 void push(int var_type, char *address)
 {
 	char *type_label = get_var_type_id(var_type);
 	printf("\tpush%s %s\n", type_label, address);
 }
 
+/********************************************************
+ * Generate assembly pseudocode of function mov  
+ *******************************************************/
 void mov(int var_type, const char *dest, const char *src)
 {
 	char *typelabel = get_var_type_id(var_type);
 	printf("\tmov%s %s, %s\n", typelabel, dest, src);
 }
 
+/********************************************************
+ * Generate assembly pseudocode of function cmp
+ * 
+ * Function used varies according with relop
+ * 
+ * > - above
+ * < - below
+ * = - cmp
+ *******************************************************/
 void cmp(int relop, int var_type, char *left_operator, char *right_operator)
 {
 	char *type_label = get_var_type_id(var_type);
 	char *aux_label = get_var_label(var_type, left_operator);
 	char *acc_label = get_var_label(var_type, right_operator);
+
 	switch (relop)
 	{
 	case '>':
