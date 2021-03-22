@@ -1,6 +1,4 @@
 #include <pseudocode.h>
-//TODO: FINISH COMMENTING THIS
-
 /**********************************************
  * Function to retrieve value from accumulator
  * And store into var "name"
@@ -141,9 +139,9 @@ void mov(int var_type, const char *dest, const char *src)
  * 
  * Function used varies according with relop
  * 
- * > - above
- * < - below
- * = - cmp
+ * > - above(var_type_label)
+ * < - below(var_type_label)
+ * = - cmp(var_type_label)
  *******************************************************/
 void cmp(int relop, int var_type, char *left_operator, char *right_operator)
 {
