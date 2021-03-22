@@ -1,17 +1,32 @@
 /**@<symtab.c>::**/
 #include <symtab.h>
 
-/*********************************
- * symtab.h::
- * typedef
- * struct __symtab__ {
- *	 char symbol[MAXIDLEN+1];
- *	 int type;
- * }
- * SYMTAB;
- *********************************/
+/**********************************************
+ * Declaration of symtab structure at symtab.h
+ * 
+ * symtab array holds all the identifiers of 
+ * variable, function and procedure present 
+ * on the input code
+ **********************************************/
 SYMTAB symtab[MAXSTBENTRIES];
+
+/*******************************************************************
+ * This variable holds the last inserted(current) symbol position
+ * Registered in the symtab, always set with count of symbols
+ *******************************************************************/
+int symtab_entry;
+
+/*******************************************************************
+ * This variable holds the next free position in symtab
+ * Registered in the symtab, always set with (count of symbols + 1)
+ *******************************************************************/
 int symtab_next_entry = 0;
+
+/**************************************************************
+ * This function check if string symbol exists at symtab array
+ * 
+ * Return symbol position or 0
+ **************************************************************/
 int symtab_lookup(const char *symbol)
 {
 	for (symtab_entry = symtab_next_entry - 1; symtab_entry > -1; symtab_entry--)
@@ -21,10 +36,17 @@ int symtab_lookup(const char *symbol)
 	}
 	return symtab_entry = -1;
 }
-int symtab_entry;
 
+/**************************************************************
+ * This function tryes to insert a new symbol at symtab
+ * 
+ * Throws error if symbol is already present at the same lexical level
+ * 
+ * Return symbol position or -2
+ **************************************************************/
 int symtab_append(const char *symbol, int lexical_level, int objtype, int transp_type)
 {
+	char message[100];
 	if (symtab_lookup(symbol) < 0 || symtab[symtab_entry].lexical_level <= lexical_level)
 	{
 		strcpy(symtab[symtab_next_entry].symbol, symbol);
@@ -36,12 +58,25 @@ int symtab_append(const char *symbol, int lexical_level, int objtype, int transp
 	}
 	else
 	{
-		fprintf(stderr, "symtab_append: %s multiply defined in current lexical level %d\n", symbol, lexical_level);
+		snprintf(message, strlen(message), "%s is already defined in current lexical level %d!", symbol, lexical_level);
+		show_error(message);
 		semantic_error++;
 		return -2;
 	}
 }
 
+/***********************************************************************
+ * This function updates the type and data size of newly inserted symbols 
+ * 
+ * Update table
+ * TYPE  - SIZE
+ * BOOL  -> 1
+ * INT32 -> 4
+ * FLT32 -> 4
+ * INT64 -> 8
+ * FLT64 -> 8
+ * OTHER -> 0
+ **********************************************************************/
 void symtab_update_type(int start, int type)
 {
 	int i;

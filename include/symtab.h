@@ -2,26 +2,38 @@
 
 #pragma once
 
+#include <constants.h>
+#include <enums.h>
 #include <string.h>
 #include <stdio.h>
-#include <enums.h>
-#include <constants.h>
+#include <utils.h>
 
+/*********************
+ * symtab structure
+ *********************/
 typedef struct __symtab__
 {
 	char symbol[MAXIDLEN + 1];
 	char offset[MAXIDLEN + 1];
 	int type;
 	int data_size;
-	/** inserted on feb 17th: **/
 	int lexical_level;
 	int objtype;
 	int transp_type;
 } SYMTAB;
+/**************************
+ * end of symtab structure
+ **************************/
 
+/*******************************
+ * symtab manipulation methods
+ *******************************/
 int symtab_append(const char *symbol, int lexical_level, int objtype, int transp_type);
 int symtab_lookup(const char *);
 void symtab_update_type(int, int);
+/*************************************
+ * end of symtab manipulation methods
+ *************************************/
 
 // Variables declared at symtab.c
 extern SYMTAB symtab[MAXSTBENTRIES];

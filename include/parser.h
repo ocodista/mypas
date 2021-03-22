@@ -12,6 +12,15 @@
 #include <utils.h>
 #include <lexer.h>
 
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
 /*********************
  * external variables
  *********************/

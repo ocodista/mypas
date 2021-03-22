@@ -1,6 +1,15 @@
 /**@<parser.c>::**/
 #include <parser.h>
 
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
 /*******************************************
  * This file is used to validate user entry
  * and parse object types

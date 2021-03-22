@@ -6,6 +6,15 @@
 #include <enums.h>
 #include <utils.h>
 
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
 /****************************
  * assign/retrive functions
  ****************************/
