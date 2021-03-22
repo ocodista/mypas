@@ -47,10 +47,10 @@ char message[100];
 // Used to map lexical level of current execution
 /**/ int lexical_level = 0; /**/
 
-// Used to store object type
+// Used to store object type (valid values can be found at enums.h)
 /**/ int objtype; /**/
 
-// Used to store correct way of transport 'current type'
+// Used to store correct way of transport 'current type' (valid values can be found at enums.h)
 /**/ int transp_type; /**/
 
 // Counter for semantic errors
@@ -64,7 +64,7 @@ char message[100];
  * Entry point of the application
  * 
  * SYNTAX: 
- * PROGRAM ID ; declarative imperative .
+ * PROGRAM ID SEMICOLON declarative imperative .
  ****************************************/
 void mypas(void)
 {
@@ -227,7 +227,7 @@ void function()
 /*******************************************************
  * This function validates the syntax of a procedure
  * 
- * procedure ->  PROCEDURE ID formparm sbp_end
+ * procedure -> PROCEDURE ID formparm sbp_end
  ********************************************************/
 void procedure()
 {
@@ -306,8 +306,8 @@ void formparm(void)
  * 
  * Where every statement is separated by ';'
  * 
- * imperative -> BEGIN stmt { ; stmt } END
- **********************************************/
+ * imperative -> BEGIN stmt { SEMICOLON stmt } END
+ **************************************************/
 void imperative(void)
 {
 	match(BEGIN);
@@ -529,7 +529,9 @@ int do_relop(int expr_type, int left_type)
 	/**/
 	if (left_type != VOID)
 	{
-		cmp(relop, left_type, "aux", "acc");
+		acc = get_var_label(left_type, "acc");
+		aux = get_var_label(left_type, "aux");
+		cmp(relop, left_type, aux, acc);
 		return expr_type;
 	}
 	else
