@@ -1,6 +1,15 @@
 /**@<tokens.h>::**/
 #pragma once
 
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
 // Enum containing all tokens used by compiler
 enum
 {

@@ -1,12 +1,26 @@
 /**@<lexer.c>::**/
+#include <lexer.h>
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
 /***********************************************************
  * This file has the purpose of classifying and validating
  * user entrances according to the lexicals rules of pascal
  ***********************************************************/
-#include <lexer.h>
 
+// Variable used to count columns
 int column = 1;
+
+// Variable used as buffer for string entries
 char lexeme[MAXIDLEN + 1];
+
+// Variable to count line_number of current execution
 int line_number = 1;
 
 /******************************************

@@ -8,6 +8,15 @@
 #include <stdio.h>
 #include <utils.h>
 
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
 /*********************
  * symtab structure
  *********************/

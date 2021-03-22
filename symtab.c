@@ -1,5 +1,13 @@
 /**@<symtab.c>::**/
 #include <symtab.h>
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
 
 /**********************************************
  * Declaration of symtab structure at symtab.h

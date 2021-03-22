@@ -4,6 +4,15 @@
 #include <stdlib.h>
 #include <lexer.h>
 
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
 // Declaration at lexer.c
 extern int line_number;
 

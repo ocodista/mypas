@@ -1,4 +1,13 @@
 #include <pseudocode.h>
+/****************************************
+ * Project MyPas - Group 6
+ * 
+ * Adriano Yoshimoto
+ * Bruno Domene
+ * Caio Borghi
+ * Gabriel Habberman
+ ****************************************/
+
 /**********************************************
  * Function to retrieve value from accumulator
  * And store into var "name"
